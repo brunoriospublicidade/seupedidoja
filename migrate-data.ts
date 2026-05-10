@@ -60,6 +60,19 @@ async function migrate() {
       console.log(`✅ ${categories.length} categories migrated.`);
     }
 
+    // 3. Subcategories
+    console.log('📦 Migrating subcategories...');
+    const { data: subcategories } = await supabase.from('subcategories').select('*');
+    if (subcategories && subcategories.length > 0) {
+      for (const sub of subcategories) {
+        await sql`
+          INSERT INTO subcategories ${sql(sub)}
+          ON CONFLICT (id) DO UPDATE SET ${sql(sub)}
+        `;
+      }
+      console.log(`✅ ${subcategories.length} subcategories migrated.`);
+    }
+
     // 3. Products
     console.log('📦 Migrating products...');
     const { data: products } = await supabase.from('products').select('*');
