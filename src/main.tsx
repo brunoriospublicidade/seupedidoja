@@ -12,7 +12,9 @@ const Main = () => {
     trpc.createClient({
       links: [
         httpLink({
-          url: 'http://127.0.0.1:4001/trpc',
+          url: typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+            ? '/trpc'
+            : 'http://127.0.0.1:4001/trpc',
           headers() {
             return {
               'x-restaurant-id': localStorage.getItem('restaurant_id') || undefined,
