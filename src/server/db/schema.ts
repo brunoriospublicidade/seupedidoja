@@ -36,11 +36,19 @@ export const products = pgTable('products', {
   id: uuid('id').defaultRandom().primaryKey(),
   restaurantId: uuid('restaurant_id').references(() => restaurants.id),
   categoryId: uuid('category_id').references(() => categories.id),
+  subcategoryId: uuid('subcategory_id'),
   name: text('name').notNull(),
   description: text('description'),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
   imageUrl: text('image_url'),
   optionals: jsonb('optionals'), 
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const subcategories = pgTable('subcategories', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  categoryId: uuid('category_id').references(() => categories.id),
+  name: text('name').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
