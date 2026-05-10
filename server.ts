@@ -70,6 +70,12 @@ app.use('/uploads', express.static(uploadsPath));
 
 // Serve static files from the React app
 const distPath = path.join(__dirname, 'dist');
+console.log(`[LOG] Serving static files from: ${distPath}`);
+if (fs.existsSync(path.join(distPath, 'index.html'))) {
+  console.log(`[LOG] index.html found at: ${path.join(distPath, 'index.html')}`);
+} else {
+  console.error(`[ERROR] index.html NOT found at: ${path.join(distPath, 'index.html')}`);
+}
 app.use(express.static(distPath));
 
 // Handle React routing, return all requests to React app
