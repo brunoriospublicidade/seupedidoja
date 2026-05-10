@@ -9,8 +9,11 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
 const databaseUrl = process.env.DATABASE_URL || '';
 
+if (!supabaseUrl) console.error('❌ Missing VITE_SUPABASE_URL');
+if (!supabaseKey) console.error('❌ Missing VITE_SUPABASE_ANON_KEY');
+if (!databaseUrl) console.error('❌ Missing DATABASE_URL');
+
 if (!supabaseUrl || !supabaseKey || !databaseUrl) {
-  console.error('Missing environment variables');
   process.exit(1);
 }
 
