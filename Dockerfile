@@ -12,7 +12,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Run build to generate dist folder
+# Run build to generate dist folder (frontend)
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -32,9 +32,10 @@ COPY --from=builder /app/server.ts ./
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig.json ./
 
-# Using tsx to run the server in production
+# Install tsx globally just in case, but let's try to run directly
 RUN npm install -g tsx
 
 EXPOSE 4001
 
-CMD ["tsx", "server.ts"]
+# Use tsx but with explicit host and port
+CMD ["tsx", "server.ts", "--host", "0.0.0.0"]
