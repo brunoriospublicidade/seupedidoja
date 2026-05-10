@@ -69,7 +69,7 @@ const SettingsPage = () => {
 
   useEffect(() => {
     if (restaurant) {
-      let openingHours = restaurant.opening_hours;
+      let openingHours = restaurant.openingHours;
       if (typeof openingHours === 'string') {
         try { openingHours = JSON.parse(openingHours); } catch { openingHours = {}; }
       }
@@ -83,19 +83,20 @@ const SettingsPage = () => {
         { id: 'sab', name: 'Sábado' },
         { id: 'dom', name: 'Domingo' },
       ];
-
-      const initializedHours = { ...openingHours };
+ 
+      const initializedHours = { ...(openingHours as any) };
       DAYS_OF_WEEK.forEach(day => {
         if (!initializedHours[day.id]) {
           initializedHours[day.id] = { isOpen: day.id !== 'dom', open: '09:00', close: '19:00' };
         }
       });
-
+ 
       setFormData({
         ...restaurant,
         description: restaurant.description || '',
-        subscription_plan: restaurant.subscription_plan || 'pedidos',
-        banner_url: restaurant.banner_url || '',
+        subscription_plan: restaurant.subscriptionPlan || 'pedidos',
+        banner_url: restaurant.bannerUrl || '',
+        logo_url: restaurant.logoUrl || '',
         opening_hours: initializedHours
       });
     }
@@ -136,12 +137,12 @@ const SettingsPage = () => {
 
   const handleCheckout = (planId: string) => {
     const plan = plans?.find(p => p.id === planId);
-    if (!plan?.stripe_price_id) {
+    if (!plan?.stripePriceId) {
       return toast.error('Este plano ainda não está configurado para pagamentos.');
     }
     
     checkoutMutation.mutate({
-      priceId: plan.stripe_price_id,
+      priceId: plan.stripePriceId || '',
       restaurantId: restaurant?.id || '',
       planId: plan.id
     });
@@ -185,7 +186,7 @@ const SettingsPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans?.map((plan) => {
-            const isActive = restaurant?.subscription_plan === plan.id;
+            const isActive = restaurant?.subscriptionPlan === plan.id;
             const isSelected = formData.subscription_plan === plan.id;
             
             return (
@@ -207,7 +208,7 @@ const SettingsPage = () => {
 
                 <div className="flex justify-between items-start">
                   <div className={`p-3 rounded-2xl ${isSelected ? 'bg-primary/10' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                    {plan.icon_name === 'zap' ? <Zap className="text-blue-500" /> : plan.icon_name === 'rocket' ? <Rocket className="text-purple-500" /> : <ShieldCheck className="text-emerald-500" />}
+                    {plan.iconName === 'zap' ? <Zap className="text-blue-500" /> : plan.iconName === 'rocket' ? <Rocket className="text-purple-500" /> : <ShieldCheck className="text-emerald-500" />}
                   </div>
                   <div className="text-right">
                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Por mês</span>
@@ -218,7 +219,7 @@ const SettingsPage = () => {
                 <div>
                   <h4 className="text-lg font-bold text-slate-800 dark:text-white">{plan.name}</h4>
                   <div className="mt-4 space-y-3">
-                    {plan.features.map((feature: string, idx: number) => (
+                    {(plan.features as string[] || []).map((feature: string, idx: number) => (
                       <div key={idx} className="flex items-center gap-2">
                         <CheckCircle2 size={16} className={isSelected ? 'text-primary' : 'text-slate-300'} />
                         <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{feature}</span>

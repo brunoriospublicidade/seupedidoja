@@ -39,8 +39,8 @@ const MarketingPage = () => {
     { id: '3', name: 'Promoção Relâmpago', content: 'SÓ HOJE! {{name}}, aproveite nossa promoção de Compre 1 Leve 2. Válido até as 22h!' },
   ];
 
-  const credits = restaurant?.message_credits || 30;
-  const usedThisMonth = restaurant?.messages_sent_this_month || 0;
+  const credits = restaurant?.messageCredits || 30;
+  const usedThisMonth = restaurant?.messagesSentThisMonth || 0;
 
   const sendMutation = trpc.marketing.sendWhatsApp.useMutation();
 

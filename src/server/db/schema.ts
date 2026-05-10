@@ -104,6 +104,7 @@ export const plans = pgTable('plans', {
   name: text('name').notNull(),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
   stripePriceId: text('stripe_price_id'),
+  iconName: text('icon_name').default('zap'),
   features: jsonb('features').default([]),
   sortOrder: integer('sort_order').default(0),
   createdAt: timestamp('created_at').defaultNow(),

@@ -34,7 +34,7 @@ const MenuPage = () => {
   const availableSubcategories = useMemo(() => {
     if (!newProduct.category_id || !categories) return [];
     const category = categories.find(c => c.id === newProduct.category_id);
-    return category?.subcategories || [];
+    return (category as any)?.subcategories || [];
   }, [newProduct.category_id, categories]);
 
   const groupedProducts = useMemo(() => {
@@ -47,7 +47,7 @@ const MenuPage = () => {
 
     return categories.map(cat => ({
       ...cat,
-      items: filtered.filter(p => p.category_id === cat.id)
+      items: filtered.filter(p => p.categoryId === cat.id)
     })).filter(cat => cat.items.length > 0 || !searchTerm);
   }, [products, categories, searchTerm]);
 
@@ -110,9 +110,9 @@ const MenuPage = () => {
       name: product.name,
       description: product.description || '',
       price: product.price.toFixed(2).replace('.', ','),
-      category_id: product.category_id,
-      subcategory_id: product.subcategory_id || '',
-      image_url: product.image_url || '',
+      category_id: product.categoryId,
+      subcategory_id: product.subcategoryId || '',
+      image_url: product.imageUrl || '',
       selectedGroups: Array.isArray(product.optionals) ? product.optionals.map((opt: any) => typeof opt === 'string' ? opt : opt.id) : []
     });
     setIsAdding(false);
@@ -473,7 +473,7 @@ const MenuPage = () => {
               <div className="flex items-center gap-4">
                 <div 
                   className="w-1.5 h-8 rounded-full" 
-                  style={{ backgroundColor: group.color }}
+                  style={{ backgroundColor: group.color || '#F59E0B' }}
                 />
                 <h3 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                   {group.name}
@@ -503,8 +503,8 @@ const MenuPage = () => {
                         className="bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 group hover:shadow-2xl hover:shadow-black/5 transition-all duration-300 relative flex flex-col h-full"
                       >
                         <div className="aspect-[4/3] relative overflow-hidden bg-slate-100 dark:bg-slate-950">
-                          {product.image_url ? (
-                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                          {product.imageUrl ? (
+                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-200 dark:text-slate-800">
                               <ImageIcon size={64} />

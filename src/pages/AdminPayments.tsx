@@ -93,28 +93,28 @@ const AdminPaymentsPage = () => {
                  </thead>
                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                    {recentRestaurants.map((res) => {
-                     const amount = res.subscription_plan === 'gold' ? 49.90 : res.subscription_plan === 'prata' ? 29.90 : 9.90;
+                     const amount = res.subscriptionPlan === 'gold' ? 49.90 : res.subscriptionPlan === 'prata' ? 29.90 : 9.90;
                      return (
                        <tr key={res.id} className="group hover:bg-slate-50/50 dark:hover:bg-slate-950/50 transition-colors">
                          <td className="px-8 py-5">
                             <div className="text-sm font-bold text-slate-800 dark:text-white">{res.name}</div>
                             <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                               {new Date(res.created_at).toLocaleDateString('pt-BR')}
+                               {res.createdAt ? new Date(res.createdAt).toLocaleDateString('pt-BR') : '-'}
                             </div>
                          </td>
                          <td className="px-8 py-5">
-                           <span className="text-xs font-medium text-slate-500 uppercase">{res.subscription_plan || 'bronze'}</span>
+                           <span className="text-xs font-medium text-slate-500 uppercase">{res.subscriptionPlan || 'bronze'}</span>
                          </td>
                          <td className="px-8 py-5">
                            <span className="text-sm font-black text-slate-800 dark:text-white">R$ {amount.toFixed(2)}</span>
                          </td>
                          <td className="px-8 py-5">
                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
-                             res.subscription_plan !== 'bronze' 
+                             res.subscriptionPlan !== 'bronze' 
                              ? 'bg-green-100 text-green-700' 
                              : 'bg-blue-100 text-blue-700'
                            }`}>
-                             {res.subscription_plan !== 'bronze' ? 'Pago' : 'Trial'}
+                             {res.subscriptionPlan !== 'bronze' ? 'Pago' : 'Trial'}
                            </span>
                          </td>
                        </tr>

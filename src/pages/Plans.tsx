@@ -19,7 +19,13 @@ const PlansPage = () => {
   const [editingPlan, setEditingPlan] = useState<any>(null);
 
   const handleEdit = (plan: any) => {
-    setEditingPlan({ ...plan });
+    setEditingPlan({ 
+      id: plan.id,
+      name: plan.name,
+      price: plan.price,
+      stripe_price_id: plan.stripePriceId || '',
+      features: plan.features || []
+    });
     setIsModalOpen(true);
   };
 
@@ -77,7 +83,7 @@ const PlansPage = () => {
           >
             <div className="flex justify-between items-start">
               <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl group-hover:bg-primary/10 transition-colors">
-                {getIcon(plan.icon_name)}
+                {getIcon(plan.iconName || 'zap')}
               </div>
               <button 
                 onClick={() => handleEdit(plan)}
@@ -94,7 +100,7 @@ const PlansPage = () => {
                 <span className="text-4xl font-black text-slate-800 dark:text-white">{plan.price}</span>
                 <span className="text-slate-400 text-sm font-bold">/mês</span>
               </div>
-              {plan.stripe_price_id ? (
+              {plan.stripePriceId ? (
                 <div className="flex items-center gap-2 text-[10px] font-bold text-emerald-500 bg-emerald-500/5 px-2 py-1 rounded-lg w-fit">
                   <CreditCard size={10} /> Vinculado ao Stripe
                 </div>
@@ -107,7 +113,7 @@ const PlansPage = () => {
 
             <div className="flex-1 space-y-4">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50 dark:border-slate-800 pb-2">Recursos Inclusos</p>
-              {plan.features.map((feature: string, idx: number) => (
+              {(plan.features as string[] || []).map((feature: string, idx: number) => (
                 <div key={idx} className="flex items-center gap-3">
                   <CheckCircle2 size={16} className="text-primary" />
                   <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">{feature}</span>
@@ -139,7 +145,7 @@ const PlansPage = () => {
               <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-sm">
-                    {getIcon(editingPlan?.icon_name)}
+                    {getIcon(editingPlan?.iconName || editingPlan?.icon_name)}
                   </div>
                   <div>
                     <h3 className="text-xl font-bold dark:text-white">Editar {editingPlan?.name}</h3>

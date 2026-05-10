@@ -99,7 +99,7 @@ const AdminUsersPage = () => {
     // In a real app, we'd have these columns separate.
     setFormData({
       name: res.name || '',
-      food_type: res.food_type || '',
+      food_type: res.foodType || '',
       cep: '', // These would ideally come from separate columns
       street: res.address || '',
       number: '',
@@ -108,7 +108,7 @@ const AdminUsersPage = () => {
       city: '',
       state: '',
       phone: res.phone || '',
-      subscription_plan: res.subscription_plan || 'bronze'
+      subscription_plan: res.subscriptionPlan || 'bronze'
     });
     setIsModalOpen(true);
   };
@@ -204,7 +204,7 @@ const AdminUsersPage = () => {
                       <div>
                         <div className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
                            {res.name}
-                           <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-black uppercase">{res.food_type}</span>
+                           <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-black uppercase">{res.foodType}</span>
                         </div>
                         <div className="text-xs text-primary font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => window.open(`/menu/${res.slug}`, '_blank')}>
                            <Globe size={10} /> /{res.slug}
@@ -218,11 +218,11 @@ const AdminUsersPage = () => {
                   </td>
                   <td className="px-8 py-6">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      res.subscription_plan === 'gold' ? 'bg-amber-100 text-amber-700' : 
-                      res.subscription_plan === 'prata' ? 'bg-blue-100 text-blue-700' : 
+                      res.subscriptionPlan === 'gold' ? 'bg-amber-100 text-amber-700' : 
+                      res.subscriptionPlan === 'prata' ? 'bg-blue-100 text-blue-700' : 
                       'bg-slate-100 text-slate-500'
                     }`}>
-                      {res.subscription_plan || 'bronze'}
+                      {res.subscriptionPlan || 'bronze'}
                     </span>
                   </td>
                   <td className="px-8 py-6 text-right">

@@ -130,17 +130,17 @@ const CouponsPage = () => {
               </div>
 
               <div className="space-y-3">
-                {coupon.usage_limit && (
+                {coupon.usageLimit && (
                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
                     <span className="flex items-center gap-1.5"><Hash size={12} className="text-slate-300" /> Uso</span>
-                    <span>{coupon.usage_count} / {coupon.usage_limit}</span>
+                    <span>{coupon.usageCount} / {coupon.usageLimit}</span>
                   </div>
                 )}
-                {coupon.expires_at && (
+                {coupon.expiresAt && (
                   <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase">
                     <span className="flex items-center gap-1.5"><Calendar size={12} className="text-slate-300" /> Vencimento</span>
-                    <span className={new Date(coupon.expires_at) < new Date() ? 'text-red-500' : ''}>
-                      {new Date(coupon.expires_at).toLocaleDateString()}
+                    <span className={new Date(coupon.expiresAt) < new Date() ? 'text-red-500' : ''}>
+                      {new Date(coupon.expiresAt).toLocaleDateString()}
                     </span>
                   </div>
                 )}

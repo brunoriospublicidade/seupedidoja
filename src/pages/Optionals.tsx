@@ -85,8 +85,8 @@ const OptionalsPage = () => {
     setEditingId(group.id);
     setFormData({ 
       name: group.name, 
-      is_mandatory: group.is_mandatory || false, 
-      max_selection: group.max_selection || 1 
+      is_mandatory: group.isMandatory || false, 
+      max_selection: group.maxSelection || 1 
     });
     setIsFormOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -287,10 +287,10 @@ const OptionalsPage = () => {
                 <div>
                   <h3 className="text-xl font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">{group.name}</h3>
                   <div className="flex gap-2 mt-1">
-                    {group.is_mandatory && (
+                    {group.isMandatory && (
                       <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md">Obrigatório</span>
                     )}
-                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md">Máx: {group.max_selection}</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-md">Máx: {group.maxSelection}</span>
                   </div>
                 </div>
               </div>

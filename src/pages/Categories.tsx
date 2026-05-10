@@ -243,7 +243,7 @@ const CategoriesPage = () => {
               <div className="flex gap-4 items-center">
                 <div 
                   className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg"
-                  style={{ backgroundColor: category.color + '20', color: category.color }}
+                  style={{ backgroundColor: (category.color || '#F59E0B') + '20', color: category.color || '#F59E0B' }}
                 >
                   <LayoutGrid size={28} />
                 </div>
@@ -285,7 +285,7 @@ const CategoriesPage = () => {
               </div>
             </div>
 
-            <div className="h-2 w-full mt-2" style={{ backgroundColor: category.color }} />
+            <div className="h-2 w-full mt-2" style={{ backgroundColor: category.color || '#F59E0B' }} />
           </motion.div>
         ))}
       </div>

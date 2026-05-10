@@ -19,7 +19,7 @@ const PaymentsPage = () => {
     onError: (err) => toast.error(err.message)
   });
 
-  const activePlan = plans?.find(p => p.id === restaurant?.subscription_plan);
+  const activePlan = plans?.find(p => p.id === restaurant?.subscriptionPlan);
 
   if (loadingRestaurant || loadingBilling) return <div className="p-8 text-center text-slate-400">Carregando informações financeiras...</div>;
 

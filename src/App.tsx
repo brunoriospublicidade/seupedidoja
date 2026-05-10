@@ -92,8 +92,8 @@ const Sidebar = () => {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    if (restaurant?.theme_preference) {
-      const dark = restaurant.theme_preference === 'dark';
+    if (restaurant?.themePreference) {
+      const dark = restaurant.themePreference === 'dark';
       setIsDark(dark);
       if (dark) document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');

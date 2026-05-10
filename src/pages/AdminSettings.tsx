@@ -20,7 +20,7 @@ const AdminSettingsPage = () => {
   const [evolutionInstance, setEvolutionInstance] = useState('');
   
   const { data: config, isLoading } = trpc.settings.get.useQuery(undefined, {
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setFreeCredits(data.free_credits?.toString() || '30');
       setMsgPrice(data.price_per_message?.toString() || '0.15');
       setEvolutionUrl(data.evolution_url || '');

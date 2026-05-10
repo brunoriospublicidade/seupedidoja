@@ -24,7 +24,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
     return menu.categories
       .map(cat => ({
         ...cat,
-        products: filteredProducts.filter(p => p.category_id === cat.id)
+        products: filteredProducts.filter(p => p.categoryId === cat.id)
       }))
       .filter(cat => cat.products.length > 0);
   }, [menu, filteredProducts]);
@@ -56,7 +56,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       {/* Header / Banner */}
       <div className="h-48 bg-slate-200 relative overflow-hidden">
         <img 
-          src={menu.restaurant.banner_url || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80"} 
+          src={menu.restaurant.bannerUrl || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80"} 
           className="w-full h-full object-cover"
           alt="Banner"
         />
@@ -67,7 +67,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       <div className="max-w-4xl mx-auto -mt-12 relative px-4">
         <div className="bg-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
           <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg -mt-16 md:-mt-12 border border-slate-100 overflow-hidden">
-            <img src={menu.restaurant.logo_url || ""} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+            <img src={menu.restaurant.logoUrl || ""} alt="Logo" className="w-full h-full object-contain rounded-xl" />
           </div>
           <div className="flex-1 space-y-2">
             <h1 className="text-2xl font-bold text-slate-800">{menu.restaurant.name}</h1>
@@ -132,9 +132,9 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                     <p className="text-sm text-slate-500 line-clamp-2">{product.description}</p>
                     <div className="pt-2 font-bold text-slate-800">R$ {product.price?.toFixed(2).replace('.', ',')}</div>
                   </div>
-                  {product.image_url && (
+                  {product.imageUrl && (
                     <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm">
-                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
                     </div>
                   )}
                 </div>
@@ -155,7 +155,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
               className="bg-white w-full max-w-2xl rounded-t-[40px] md:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]"
             >
               <div className="relative h-64 bg-slate-100">
-                <img src={activeProduct.image_url} className="w-full h-full object-cover" alt={activeProduct.name} />
+                <img src={activeProduct.imageUrl} className="w-full h-full object-cover" alt={activeProduct.name} />
                 <button 
                   onClick={() => setActiveProduct(null)}
                   className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg"
