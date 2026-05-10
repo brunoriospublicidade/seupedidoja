@@ -121,7 +121,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
           <section key={cat.id} id={`cat-${cat.id}`} className="space-y-4">
             <h2 className="text-xl font-bold text-slate-800">{cat.name}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {cat.products.map(product => (
+              {cat.products.map((product: any) => (
                 <div 
                   key={product.id} 
                   onClick={() => setActiveProduct(product)}

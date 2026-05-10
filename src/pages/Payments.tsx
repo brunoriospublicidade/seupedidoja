@@ -54,9 +54,9 @@ const PaymentsPage = () => {
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <CheckCircle2 size={16} /> Recursos ilimitados
                 </div>
-                {billingInfo?.currentSubscription?.current_period_end && (
+                {(billingInfo as any)?.currentSubscription?.current_period_end && (
                   <div className="flex items-center gap-2 text-xs text-white/70">
-                    <Calendar size={14} /> Próximo ciclo: {new Date(billingInfo.currentSubscription.current_period_end * 1000).toLocaleDateString()}
+                    <Calendar size={14} /> Próximo ciclo: {new Date((billingInfo as any).currentSubscription.current_period_end * 1000).toLocaleDateString()}
                   </div>
                 )}
               </div>

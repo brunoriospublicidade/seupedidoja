@@ -80,8 +80,7 @@ const CategoriesPage = () => {
     if (editingId) {
       updateMutation.mutate({ id: editingId, ...formData });
     } else {
-      const restaurantId = categories?.[0]?.restaurant_id;
-      createMutation.mutate({ ...formData, restaurant_id: restaurantId });
+      createMutation.mutate({ ...formData });
     }
   };
 

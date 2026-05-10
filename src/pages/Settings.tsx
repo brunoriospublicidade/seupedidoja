@@ -28,7 +28,7 @@ const SettingsPage = () => {
           origin: { y: 0.6 },
           colors: ['#F59E0B', '#10B981', '#3B82F6']
         });
-        toast.success(`Parabéns! Seu plano foi atualizado para ${data.planId?.toUpperCase()}.`, {
+        toast.success(`Parabéns! Seu plano foi atualizado para ${(data as any).planId?.toUpperCase()}.`, {
           duration: 5000,
           icon: <PartyPopper className="text-primary" />
         });

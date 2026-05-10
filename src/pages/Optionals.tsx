@@ -98,9 +98,7 @@ const OptionalsPage = () => {
     if (editingId) {
       updateGroupMutation.mutate({ id: editingId, ...formData });
     } else {
-      const restaurantId = restaurant?.id || groups?.[0]?.restaurant_id;
-      if (!restaurantId) return toast.error('Erro ao identificar restaurante');
-      createGroupMutation.mutate({ ...formData, restaurant_id: restaurantId });
+      createGroupMutation.mutate({ ...formData });
     }
   };
 

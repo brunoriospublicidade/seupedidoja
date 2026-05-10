@@ -159,10 +159,7 @@ const MenuPage = () => {
     if (editingProduct) {
       updateMutation.mutate({ id: editingProduct.id, ...productData });
     } else {
-      const restaurantId = restaurant?.id || products?.[0]?.restaurant_id || categories?.[0]?.restaurant_id;
-      if (!restaurantId) return toast.error('Erro ao identificar restaurante');
-      
-      createMutation.mutate({ ...productData, restaurant_id: restaurantId });
+      createMutation.mutate({ ...productData });
     }
   };
 
