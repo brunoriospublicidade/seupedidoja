@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export const uploadImage = async (file: File, bucket: 'products' | 'logos') => {
+export const uploadImage = async (file: File, bucket: 'products' | 'logos' | 'banners') => {
   const fileExt = file.name.split('.').pop();
   const fileName = `${Math.random()}.${fileExt}`;
   const filePath = `${fileName}`;

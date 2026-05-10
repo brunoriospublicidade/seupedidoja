@@ -39,7 +39,7 @@ export const paymentsRouter = router({
           amount: (inv.amount_paid / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
           status: inv.status,
           pdf: inv.invoice_pdf,
-          method: inv.payment_intent ? 'Cartão' : 'Pix' // Simplified
+          method: (inv as any).payment_intent ? 'Cartão' : 'Pix' // Simplified
         }))
       };
     }),
