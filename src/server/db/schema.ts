@@ -18,6 +18,8 @@ export const restaurants = pgTable('restaurants', {
   subscriptionPlan: text('subscription_plan').default('bronze'),
   stripeCustomerId: text('stripe_customer_id'),
   themePreference: text('theme_preference').default('light'),
+  messageCredits: integer('message_credits').default(30),
+  messagesSentThisMonth: integer('messages_sent_this_month').default(0),
   ownerId: uuid('owner_id'),
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -49,6 +51,7 @@ export const subcategories = pgTable('subcategories', {
   id: uuid('id').defaultRandom().primaryKey(),
   categoryId: uuid('category_id').references(() => categories.id),
   name: text('name').notNull(),
+  order: integer('order').default(0),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -78,6 +81,7 @@ export const settings = pgTable('settings', {
 
 export const customers = pgTable('customers', {
   id: uuid('id').defaultRandom().primaryKey(),
+  restaurantId: uuid('restaurant_id').references(() => restaurants.id),
   name: text('name').notNull(),
   email: text('email'),
   phone: text('phone').notNull(),
@@ -102,5 +106,18 @@ export const plans = pgTable('plans', {
   stripePriceId: text('stripe_price_id'),
   features: jsonb('features').default([]),
   sortOrder: integer('sort_order').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const coupons = pgTable('coupons', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  restaurantId: uuid('restaurant_id').references(() => restaurants.id),
+  code: text('code').notNull(),
+  type: text('type').notNull(), // 'percentage' | 'fixed'
+  value: decimal('value', { precision: 10, scale: 2 }).notNull(),
+  expiresAt: timestamp('expires_at'),
+  usageLimit: integer('usage_limit'),
+  usageCount: integer('usage_count').default(0),
+  active: boolean('active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
 });

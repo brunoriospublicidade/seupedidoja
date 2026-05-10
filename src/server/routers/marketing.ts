@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { restaurants, settings } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 export const marketingRouter = router({
   sendWhatsApp: publicProcedure
@@ -11,28 +13,24 @@ export const marketingRouter = router({
     }))
     .mutation(async ({ input }) => {
        // 1. Buscar Configurações Globais
-       const { data: settings } = await supabase
-         .from('settings')
-         .select('value')
-         .eq('key', 'marketing_config')
-         .single();
-         
-       if (!settings || !settings.value.evolution_url) {
+       const [config] = await db.select()
+         .from(settings)
+         .where(eq(settings.key, 'marketing_config'));
+          
+       if (!config || !(config.value as any).evolution_url) {
          throw new Error('Evolution API não configurada no painel administrativo');
        }
        
-       const { evolution_url, evolution_key, evolution_instance } = settings.value;
+       const { evolution_url, evolution_key, evolution_instance } = config.value as any;
        
        // 2. Verificar Créditos do Restaurante
-       const { data: restaurant } = await supabase
-         .from('restaurants')
-         .select('message_credits, messages_sent_this_month')
-         .eq('id', input.restaurantId)
-         .single();
-         
+       const [restaurant] = await db.select()
+         .from(restaurants)
+         .where(eq(restaurants.id, input.restaurantId));
+          
        if (!restaurant) throw new Error('Restaurante não encontrado');
        
-       const availableCredits = (restaurant.message_credits || 30) - (restaurant.messages_sent_this_month || 0);
+       const availableCredits = (restaurant.messageCredits || 30) - (restaurant.messagesSentThisMonth || 0);
        
        if (availableCredits <= 0) {
           throw new Error('Créditos insuficientes para este disparo');
@@ -67,12 +65,11 @@ export const marketingRouter = router({
          }
          
          // 4. Atualizar Créditos no Banco
-         await supabase
-           .from('restaurants')
-           .update({ 
-             messages_sent_this_month: (restaurant.messages_sent_this_month || 0) + 1 
+         await db.update(restaurants)
+           .set({ 
+             messagesSentThisMonth: (restaurant.messagesSentThisMonth || 0) + 1 
            })
-           .eq('id', input.restaurantId);
+           .where(eq(restaurants.id, input.restaurantId));
 
          return { success: true };
        } catch (error: any) {

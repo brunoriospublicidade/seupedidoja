@@ -1,22 +1,25 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { products, subcategories } from '../db/schema';
+import { eq, asc } from 'drizzle-orm';
 
 export const productsRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
-    // Priority to the context restaurant ID
     const restaurantId = ctx.restaurantId;
-    
     if (!restaurantId) return [];
 
-    const { data, error } = await supabase
-      .from('products')
-      .select('*, subcategories(name)')
-      .eq('restaurant_id', restaurantId)
-      .order('name', { ascending: true });
+    const resProducts = await db.select().from(products)
+      .where(eq(products.restaurantId, restaurantId))
+      .orderBy(asc(products.name));
     
-    if (error) throw error;
-    return data;
+    // Fetch subcategories to join name manually for now (or use real join)
+    const resSubcategories = await db.select().from(subcategories);
+
+    return resProducts.map(prod => ({
+      ...prod,
+      subcategories: resSubcategories.find(sub => sub.id === prod.subcategoryId) || null
+    }));
   }),
     
   create: publicProcedure
@@ -33,13 +36,20 @@ export const productsRouter = router({
       const restaurantId = ctx.restaurantId;
       if (!restaurantId) throw new Error('Restaurant session not found');
 
-      const { data, error } = await supabase
-        .from('products')
-        .insert([{ ...input, restaurant_id: restaurantId }])
-        .select();
+      const [data] = await db.insert(products)
+        .values({
+          name: input.name,
+          description: input.description,
+          price: input.price.toString(),
+          categoryId: input.category_id,
+          subcategoryId: input.subcategory_id,
+          imageUrl: input.image_url,
+          optionals: input.optionals,
+          restaurantId: restaurantId
+        })
+        .returning();
       
-      if (error) throw error;
-      return data[0];
+      return data;
     }),
 
   update: publicProcedure
@@ -55,25 +65,28 @@ export const productsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...updateData } = input;
-      const { data, error } = await supabase
-        .from('products')
-        .update(updateData)
-        .eq('id', id)
-        .select();
       
-      if (error) throw error;
-      return data[0];
+      const mappedData: any = {};
+      if (input.name) mappedData.name = input.name;
+      if (input.description) mappedData.description = input.description;
+      if (input.price !== undefined) mappedData.price = input.price.toString();
+      if (input.category_id) mappedData.categoryId = input.category_id;
+      if (input.subcategory_id) mappedData.subcategoryId = input.subcategory_id;
+      if (input.image_url) mappedData.imageUrl = input.image_url;
+      if (input.optionals) mappedData.optionals = input.optionals;
+
+      const [data] = await db.update(products)
+        .set(mappedData)
+        .where(eq(products.id, id))
+        .returning();
+      
+      return data;
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', input.id);
-      
-      if (error) throw error;
+      await db.delete(products).where(eq(products.id, input.id));
       return true;
     }),
 
@@ -91,14 +104,17 @@ export const productsRouter = router({
       const restaurantId = ctx.restaurantId;
       if (!restaurantId) throw new Error('Restaurant session not found');
 
-      const productsWithId = input.map(p => ({ ...p, restaurant_id: restaurantId }));
+      const values = input.map(p => ({
+        name: p.name,
+        description: p.description,
+        price: p.price.toString(),
+        categoryId: p.category_id,
+        subcategoryId: p.subcategory_id,
+        imageUrl: p.image_url,
+        optionals: p.optionals,
+        restaurantId: restaurantId
+      }));
 
-      const { data, error } = await supabase
-        .from('products')
-        .insert(productsWithId)
-        .select();
-      
-      if (error) throw error;
-      return data;
+      return await db.insert(products).values(values).returning();
     }),
 });

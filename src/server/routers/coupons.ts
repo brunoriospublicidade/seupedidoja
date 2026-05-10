@@ -1,19 +1,16 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { coupons } from '../db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 
 export const couponsRouter = router({
   list: publicProcedure
     .input(z.object({ restaurantId: z.string() }))
     .query(async ({ input }) => {
-      const { data, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('restaurant_id', input.restaurantId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
+      return await db.select().from(coupons)
+        .where(eq(coupons.restaurantId, input.restaurantId))
+        .orderBy(desc(coupons.createdAt));
     }),
 
   create: publicProcedure
@@ -26,40 +23,37 @@ export const couponsRouter = router({
       usage_limit: z.number().optional().nullable(),
     }))
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
-        .from('coupons')
-        .insert([{
-          ...input,
-          code: input.code.toUpperCase().trim()
-        }])
-        .select();
+      const [data] = await db.insert(coupons)
+        .values({
+          code: input.code.toUpperCase().trim(),
+          type: input.type,
+          value: input.value.toString(),
+          restaurantId: input.restaurant_id,
+          expiresAt: input.expires_at ? new Date(input.expires_at) : null,
+          usageLimit: input.usage_limit,
+          active: true,
+          usageCount: 0
+        })
+        .returning();
       
-      if (error) throw error;
-      return data[0];
+      return data;
     }),
 
   toggleStatus: publicProcedure
     .input(z.object({ id: z.string(), active: z.boolean() }))
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
-        .from('coupons')
-        .update({ active: input.active })
-        .eq('id', input.id)
-        .select();
+      const [data] = await db.update(coupons)
+        .set({ active: input.active })
+        .where(eq(coupons.id, input.id))
+        .returning();
       
-      if (error) throw error;
-      return data[0];
+      return data;
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const { error } = await supabase
-        .from('coupons')
-        .delete()
-        .eq('id', input.id);
-      
-      if (error) throw error;
+      await db.delete(coupons).where(eq(coupons.id, input.id));
       return true;
     }),
 
@@ -69,23 +63,22 @@ export const couponsRouter = router({
       restaurantId: z.string() 
     }))
     .mutation(async ({ input }) => {
-      const { data: coupon, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('code', input.code.toUpperCase().trim())
-        .eq('restaurant_id', input.restaurantId)
-        .eq('active', true)
-        .single();
+      const [coupon] = await db.select().from(coupons)
+        .where(and(
+          eq(coupons.code, input.code.toUpperCase().trim()),
+          eq(coupons.restaurantId, input.restaurantId),
+          eq(coupons.active, true)
+        ));
 
-      if (error || !coupon) return { valid: false, message: 'Cupom inválido ou expirado' };
+      if (!coupon) return { valid: false, message: 'Cupom inválido ou expirado' };
 
       // Check usage limit
-      if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
+      if (coupon.usageLimit && (coupon.usageCount || 0) >= coupon.usageLimit) {
         return { valid: false, message: 'Este cupom atingiu o limite de uso' };
       }
 
       // Check expiration date
-      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
         return { valid: false, message: 'Este cupom expirou' };
       }
 

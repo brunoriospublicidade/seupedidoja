@@ -1,16 +1,12 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { plans } from '../db/schema';
+import { eq, asc } from 'drizzle-orm';
 
 export const plansRouter = router({
   list: publicProcedure.query(async () => {
-    const { data, error } = await supabase
-      .from('plans')
-      .select('*')
-      .order('sort_order', { ascending: true });
-    
-    if (error) throw error;
-    return data;
+    return await db.select().from(plans).orderBy(asc(plans.sortOrder));
   }),
 
   update: publicProcedure
@@ -22,19 +18,16 @@ export const plansRouter = router({
       features: z.array(z.string()),
     }))
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
-        .from('plans')
-        .update({
+      const [data] = await db.update(plans)
+        .set({
           name: input.name,
           price: input.price,
-          stripe_price_id: input.stripe_price_id,
+          stripePriceId: input.stripe_price_id,
           features: input.features,
         })
-        .eq('id', input.id)
-        .select()
-        .single();
+        .where(eq(plans.id, input.id))
+        .returning();
       
-      if (error) throw error;
       return data;
     }),
 });

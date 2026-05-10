@@ -1,20 +1,24 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { optionalGroups, optionalItems } from '../db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export const optionalsRouter = router({
   listGroups: publicProcedure.query(async ({ ctx }) => {
     const restaurantId = ctx.restaurantId;
     if (!restaurantId) return [];
 
-    const { data, error } = await supabase
-      .from('optional_groups')
-      .select('*, optional_items(*)')
-      .eq('restaurant_id', restaurantId)
-      .order('created_at', { ascending: false });
+    const resGroups = await db.select().from(optionalGroups)
+      .where(eq(optionalGroups.restaurantId, restaurantId))
+      .orderBy(desc(optionalGroups.createdAt));
     
-    if (error) throw error;
-    return data;
+    const resItems = await db.select().from(optionalItems);
+
+    return resGroups.map(group => ({
+      ...group,
+      optional_items: resItems.filter(item => item.groupId === group.id)
+    }));
   }),
   
   createGroup: publicProcedure
@@ -33,25 +37,23 @@ export const optionalsRouter = router({
 
       const { items, ...groupData } = input;
       
-      const { data: group, error: groupError } = await supabase
-        .from('optional_groups')
-        .insert([{ ...groupData, restaurant_id: restaurantId }])
-        .select()
-        .single();
+      const [group] = await db.insert(optionalGroups)
+        .values({
+          name: groupData.name,
+          isMandatory: groupData.is_mandatory,
+          maxSelection: groupData.max_selection,
+          restaurantId: restaurantId
+        })
+        .returning();
       
-      if (groupError) throw groupError;
-
       if (items && items.length > 0) {
         const itemsToInsert = items.map(item => ({
-          ...item,
-          group_id: group.id,
+          name: item.name,
+          price: item.price.toString(),
+          groupId: group.id,
         }));
         
-        const { error: itemsError } = await supabase
-          .from('optional_items')
-          .insert(itemsToInsert);
-        
-        if (itemsError) throw itemsError;
+        await db.insert(optionalItems).values(itemsToInsert);
       }
 
       return group;
@@ -66,26 +68,24 @@ export const optionalsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...updateData } = input;
-      const { data, error } = await supabase
-        .from('optional_groups')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
       
-      if (error) throw error;
+      const mappedData: any = {};
+      if (input.name) mappedData.name = input.name;
+      if (input.is_mandatory !== undefined) mappedData.isMandatory = input.is_mandatory;
+      if (input.max_selection !== undefined) mappedData.maxSelection = input.max_selection;
+
+      const [data] = await db.update(optionalGroups)
+        .set(mappedData)
+        .where(eq(optionalGroups.id, id))
+        .returning();
+      
       return data;
     }),
 
   deleteGroup: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const { error } = await supabase
-        .from('optional_groups')
-        .delete()
-        .eq('id', input.id);
-      
-      if (error) throw error;
+      await db.delete(optionalGroups).where(eq(optionalGroups.id, input.id));
       return true;
     }),
 
@@ -96,13 +96,15 @@ export const optionalsRouter = router({
       group_id: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
-        .from('optional_items')
-        .insert([input])
-        .select();
+      const [data] = await db.insert(optionalItems)
+        .values({
+          name: input.name,
+          price: input.price.toString(),
+          groupId: input.group_id
+        })
+        .returning();
       
-      if (error) throw error;
-      return data[0];
+      return data;
     }),
 
   updateItem: publicProcedure
@@ -113,26 +115,23 @@ export const optionalsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...updateData } = input;
-      const { data, error } = await supabase
-        .from('optional_items')
-        .update(updateData)
-        .eq('id', id)
-        .select()
-        .single();
       
-      if (error) throw error;
+      const mappedData: any = {};
+      if (input.name) mappedData.name = input.name;
+      if (input.price !== undefined) mappedData.price = input.price.toString();
+
+      const [data] = await db.update(optionalItems)
+        .set(mappedData)
+        .where(eq(optionalItems.id, id))
+        .returning();
+      
       return data;
     }),
 
   deleteItem: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const { error } = await supabase
-        .from('optional_items')
-        .delete()
-        .eq('id', input.id);
-      
-      if (error) throw error;
+      await db.delete(optionalItems).where(eq(optionalItems.id, input.id));
       return true;
     }),
 });

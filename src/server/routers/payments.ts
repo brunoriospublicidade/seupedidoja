@@ -1,32 +1,32 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { stripe } from '../../lib/stripe';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { restaurants } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 export const paymentsRouter = router({
   getSubscriptionInfo: publicProcedure
     .input(z.object({ restaurantId: z.string() }))
     .query(async ({ input }) => {
-      const { data: restaurant } = await supabase
-        .from('restaurants')
-        .select('stripe_customer_id, subscription_plan')
-        .eq('id', input.restaurantId)
-        .single();
+      const [restaurant] = await db.select()
+        .from(restaurants)
+        .where(eq(restaurants.id, input.restaurantId));
 
-      if (!restaurant?.stripe_customer_id) {
+      if (!restaurant?.stripeCustomerId) {
         return { hasActiveSubscription: false, invoices: [] };
       }
 
       // Fetch active subscriptions
       const subscriptions = await stripe.subscriptions.list({
-        customer: restaurant.stripe_customer_id,
+        customer: restaurant.stripeCustomerId,
         status: 'active',
         limit: 1,
       });
 
       // Fetch recent invoices
       const invoices = await stripe.invoices.list({
-        customer: restaurant.stripe_customer_id,
+        customer: restaurant.stripeCustomerId,
         limit: 5,
       });
 
@@ -51,18 +51,16 @@ export const paymentsRouter = router({
       planId: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const { data: restaurant } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('id', input.restaurantId)
-        .single();
+      const [restaurant] = await db.select()
+        .from(restaurants)
+        .where(eq(restaurants.id, input.restaurantId));
 
       if (!restaurant) throw new Error('Restaurante não encontrado');
 
       const successUrl = (process.env.STRIPE_SUCCESS_URL || 'http://localhost:5176/admin/configuracoes?success=true') + '&session_id={CHECKOUT_SESSION_ID}';
 
       const session = await stripe.checkout.sessions.create({
-        customer: restaurant.stripe_customer_id || undefined, // Use existing customer if available
+        customer: restaurant.stripeCustomerId || undefined, 
         payment_method_types: ['card'],
         line_items: [{ price: input.priceId, quantity: 1 }],
         mode: 'subscription',
@@ -72,7 +70,7 @@ export const paymentsRouter = router({
           restaurantId: input.restaurantId,
           planId: input.planId,
         },
-        customer_email: !restaurant.stripe_customer_id ? restaurant.email || undefined : undefined,
+        customer_email: !restaurant.stripeCustomerId ? restaurant.email || undefined : undefined,
       });
 
       return { url: session.url };
@@ -92,15 +90,13 @@ export const paymentsRouter = router({
           const customerId = session.customer as string;
 
           // Update the restaurant plan AND save the stripe_customer_id
-          const { error } = await supabase
-            .from('restaurants')
-            .update({ 
-              subscription_plan: planId,
-              stripe_customer_id: customerId 
+          await db.update(restaurants)
+            .set({ 
+              subscriptionPlan: planId,
+              stripeCustomerId: customerId 
             })
-            .eq('id', restaurantId);
+            .where(eq(restaurants.id, restaurantId));
 
-          if (error) throw error;
           return { success: true, planId };
         }
         
@@ -116,16 +112,14 @@ export const paymentsRouter = router({
       restaurantId: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const { data: restaurant } = await supabase
-        .from('restaurants')
-        .select('stripe_customer_id')
-        .eq('id', input.restaurantId)
-        .single();
+      const [restaurant] = await db.select()
+        .from(restaurants)
+        .where(eq(restaurants.id, input.restaurantId));
 
-      if (!restaurant?.stripe_customer_id) throw new Error('Nenhuma assinatura ativa encontrada');
+      if (!restaurant?.stripeCustomerId) throw new Error('Nenhuma assinatura ativa encontrada');
 
       const session = await stripe.billingPortal.sessions.create({
-        customer: restaurant.stripe_customer_id,
+        customer: restaurant.stripeCustomerId,
         return_url: process.env.STRIPE_SUCCESS_URL || 'http://localhost:5176/admin/configuracoes',
       });
 

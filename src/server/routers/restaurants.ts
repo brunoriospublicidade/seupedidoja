@@ -1,6 +1,8 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { restaurants, categories, products, optionalGroups, optionalItems } from '../db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 const generateSlug = (name: string) => {
   return name
@@ -19,53 +21,35 @@ export const restaurantsRouter = router({
       const targetId = input?.id || ctx.restaurantId;
       
       if (!targetId) {
-        // Legacy fallback: if absolutely no ID, get the first one (not ideal for multi-tenant)
-        const { data, error } = await supabase.from('restaurants').select('*').limit(1).single();
-        if (error) throw error;
+        const [data] = await db.select().from(restaurants).limit(1);
         return data;
       }
       
-      const { data, error } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('id', targetId)
-        .single();
-      
-      if (error) throw error;
+      const [data] = await db.select().from(restaurants).where(eq(restaurants.id, targetId));
       return data;
     }),
 
   listAll: publicProcedure
     .query(async () => {
-      const { data, error } = await supabase
-        .from('restaurants')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
+      return await db.select().from(restaurants).orderBy(desc(restaurants.createdAt));
     }),
 
   getPlatformStats: publicProcedure
     .query(async () => {
-      const { data, error } = await supabase
-        .from('restaurants')
-        .select('subscription_plan, food_type, created_at');
+      const data = await db.select().from(restaurants);
       
-      if (error) throw error;
-
       const stats = {
         totalRestaurants: data.length,
-        paidSubscriptions: data.filter(r => ['prata', 'gold'].includes(r.subscription_plan)).length,
-        trialSubscriptions: data.filter(r => r.subscription_plan === 'bronze' || !r.subscription_plan).length,
+        paidSubscriptions: data.filter(r => ['prata', 'gold'].includes(r.subscriptionPlan || '')).length,
+        trialSubscriptions: data.filter(r => r.subscriptionPlan === 'bronze' || !r.subscriptionPlan).length,
         mrr: data.reduce((acc, r) => {
-          if (r.subscription_plan === 'prata') return acc + 29.90;
-          if (r.subscription_plan === 'gold') return acc + 49.90;
-          if (r.subscription_plan === 'bronze') return acc + 9.90;
+          if (r.subscriptionPlan === 'prata') return acc + 29.90;
+          if (r.subscriptionPlan === 'gold') return acc + 49.90;
+          if (r.subscriptionPlan === 'bronze') return acc + 9.90;
           return acc;
         }, 0),
         nicheDistribution: data.reduce((acc: any, r) => {
-          const niche = r.food_type || 'Outros';
+          const niche = r.foodType || 'Outros';
           acc[niche] = (acc[niche] || 0) + 1;
           return acc;
         }, {})
@@ -77,15 +61,9 @@ export const restaurantsRouter = router({
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const { error } = await supabase
-        .from('restaurants')
-        .delete()
-        .eq('id', input.id);
-      
-      if (error) throw error;
+      await db.delete(restaurants).where(eq(restaurants.id, input.id));
       return { success: true };
     }),
-
 
   create: publicProcedure
     .input(z.object({
@@ -97,11 +75,7 @@ export const restaurantsRouter = router({
     }))
     .mutation(async ({ input }) => {
       // 1. Check if restaurant with same phone already exists
-      const { data: existing } = await supabase
-        .from('restaurants')
-        .select('id')
-        .eq('phone', input.phone)
-        .maybeSingle();
+      const [existing] = await db.select().from(restaurants).where(eq(restaurants.phone, input.phone));
 
       if (existing) {
         throw new Error('Já existe um cadastro com este telefone. Por favor, faça login.');
@@ -109,25 +83,21 @@ export const restaurantsRouter = router({
 
       const slug = generateSlug(input.name);
       
-      const { data, error } = await supabase
-        .from('restaurants')
-        .insert([{
-          name: input.name,
-          owner_id: 'a146223e-5e54-433c-b8eb-edb8938f813c', // Use a valid existing owner ID for demo
-          phone: input.phone,
-          whatsapp: input.phone, // Populate whatsapp with phone as default
-          food_type: input.food_type,
-          address: input.address,
-          description: `Email: ${input.email}`, // Store email in description as a workaround
-          slug,
-          subscription_plan: 'bronze', // Default plan
-          primary_color: '#F59E0B',
-          theme_preference: 'light'
-        }])
-        .select()
-        .single();
+      const [data] = await db.insert(restaurants).values({
+        name: input.name,
+        email: input.email,
+        ownerId: 'a146223e-5e54-433c-b8eb-edb8938f813c', 
+        phone: input.phone,
+        whatsapp: input.phone,
+        foodType: input.food_type,
+        address: input.address,
+        description: `Email: ${input.email}`,
+        slug,
+        subscriptionPlan: 'bronze',
+        primaryColor: '#F59E0B',
+        themePreference: 'light'
+      }).returning();
 
-      if (error) throw error;
       return data;
     }),
 
@@ -154,19 +124,29 @@ export const restaurantsRouter = router({
 
       if (!targetId) throw new Error('Restaurant ID not found');
 
-      // Auto-generate slug if name changed and slug not provided
-      if (input.name && !input.slug) {
-        updateData.slug = generateSlug(input.name);
+      const mappedData: any = {};
+      if (input.name) {
+        mappedData.name = input.name;
+        if (!input.slug) mappedData.slug = generateSlug(input.name);
       }
+      if (input.description) mappedData.description = input.description;
+      if (input.food_type) mappedData.foodType = input.food_type;
+      if (input.slug) mappedData.slug = input.slug;
+      if (input.logo_url) mappedData.logoUrl = input.logo_url;
+      if (input.banner_url) mappedData.bannerUrl = input.banner_url;
+      if (input.primary_color) mappedData.primaryColor = input.primary_color;
+      if (input.phone) mappedData.phone = input.phone;
+      if (input.whatsapp) mappedData.whatsapp = input.whatsapp;
+      if (input.address) mappedData.address = input.address;
+      if (input.opening_hours) mappedData.openingHours = input.opening_hours;
+      if (input.subscription_plan) mappedData.subscriptionPlan = input.subscription_plan;
+      if (input.theme_preference) mappedData.themePreference = input.theme_preference;
 
-      const { data, error } = await supabase
-        .from('restaurants')
-        .update(updateData)
-        .eq('id', targetId)
-        .select()
-        .single();
+      const [data] = await db.update(restaurants)
+        .set(mappedData)
+        .where(eq(restaurants.id, targetId))
+        .returning();
       
-      if (error) throw error;
       return data;
     }),
 
@@ -174,38 +154,32 @@ export const restaurantsRouter = router({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       // 1. Get restaurant
-      const { data: restaurant, error: resError } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('slug', input.slug)
-        .single();
-      
-      if (resError) throw resError;
+      const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.slug, input.slug));
+      if (!restaurant) throw new Error('Restaurante não encontrado');
 
       // 2. Get categories
-      const { data: categories } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('restaurant_id', restaurant.id)
-        .order('order', { ascending: true });
+      const resCategories = await db.select().from(categories)
+        .where(eq(categories.restaurantId, restaurant.id))
+        .orderBy(categories.order);
 
-      // 3. Get products with items
-      const { data: products } = await supabase
-        .from('products')
-        .select('*')
-        .eq('restaurant_id', restaurant.id);
+      // 3. Get products
+      const resProducts = await db.select().from(products).where(eq(products.restaurantId, restaurant.id));
 
       // 4. Get optional groups
-      const { data: optionalGroups } = await supabase
-        .from('optional_groups')
-        .select('*, optional_items(*)')
-        .eq('restaurant_id', restaurant.id);
+      const resOptionalGroups = await db.select().from(optionalGroups).where(eq(optionalGroups.restaurantId, restaurant.id));
+      
+      // 5. Get optional items for these groups
+      // For simplicity in MVP, we can map them or do another query
+      const resOptionalItems = await db.select().from(optionalItems);
 
       return {
         restaurant,
-        categories: categories || [],
-        products: products || [],
-        optionalGroups: optionalGroups || [],
+        categories: resCategories || [],
+        products: resProducts || [],
+        optionalGroups: resOptionalGroups.map(group => ({
+          ...group,
+          optional_items: resOptionalItems.filter(item => item.groupId === group.id)
+        })) || [],
       };
     }),
 });

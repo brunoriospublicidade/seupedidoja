@@ -1,30 +1,30 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { categories, subcategories, products } from '../db/schema';
+import { eq, and, asc } from 'drizzle-orm';
 
 export const categoriesRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
     const restaurantId = ctx.restaurantId;
     if (!restaurantId) return [];
 
-    // Fetch categories with their subcategories and products
-    const { data: categories, error } = await supabase
-      .from('categories')
-      .select('*, subcategories(*)')
-      .eq('restaurant_id', restaurantId)
-      .order('order', { ascending: true });
+    // Fetch categories
+    const resCategories = await db.select().from(categories)
+      .where(eq(categories.restaurantId, restaurantId))
+      .orderBy(asc(categories.order));
     
-    if (error) throw error;
+    // Fetch subcategories
+    const resSubcategories = await db.select().from(subcategories);
 
     // Fetch products to count them per category
-    const { data: products } = await supabase
-      .from('products')
-      .select('category_id')
-      .eq('restaurant_id', restaurantId);
+    const resProducts = await db.select().from(products)
+      .where(eq(products.restaurantId, restaurantId));
 
-    return categories.map(cat => ({
+    return resCategories.map(cat => ({
       ...cat,
-      productCount: products?.filter(p => p.category_id === cat.id).length || 0
+      subcategories: resSubcategories.filter(sub => sub.categoryId === cat.id),
+      productCount: resProducts.filter(p => p.categoryId === cat.id).length || 0
     }));
   }),
   
@@ -38,13 +38,16 @@ export const categoriesRouter = router({
       const restaurantId = ctx.restaurantId;
       if (!restaurantId) throw new Error('Restaurant session not found');
 
-      const { data, error } = await supabase
-        .from('categories')
-        .insert([{ ...input, restaurant_id: restaurantId }])
-        .select();
+      const [data] = await db.insert(categories)
+        .values({ 
+          name: input.name, 
+          color: input.color, 
+          order: input.order,
+          restaurantId: restaurantId 
+        })
+        .returning();
       
-      if (error) throw error;
-      return data[0];
+      return data;
     }),
 
   update: publicProcedure
@@ -56,25 +59,18 @@ export const categoriesRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...updateData } = input;
-      const { data, error } = await supabase
-        .from('categories')
-        .update(updateData)
-        .eq('id', id)
-        .select();
+      const [data] = await db.update(categories)
+        .set(updateData)
+        .where(eq(categories.id, id))
+        .returning();
       
-      if (error) throw error;
-      return data[0];
+      return data;
     }),
 
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', input.id);
-      
-      if (error) throw error;
+      await db.delete(categories).where(eq(categories.id, input.id));
       return true;
     }),
 
@@ -84,24 +80,20 @@ export const categoriesRouter = router({
       name: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const { data, error } = await supabase
-        .from('subcategories')
-        .insert([input])
-        .select();
+      const [data] = await db.insert(subcategories)
+        .values({
+          categoryId: input.category_id,
+          name: input.name
+        })
+        .returning();
       
-      if (error) throw error;
-      return data[0];
+      return data;
     }),
 
   deleteSubcategory: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const { error } = await supabase
-        .from('subcategories')
-        .delete()
-        .eq('id', input.id);
-      
-      if (error) throw error;
+      await db.delete(subcategories).where(eq(subcategories.id, input.id));
       return true;
     }),
 });

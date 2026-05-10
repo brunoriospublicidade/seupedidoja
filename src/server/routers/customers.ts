@@ -1,42 +1,32 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
-import { supabase } from '../../lib/supabase';
+import { db } from '../db';
+import { customers, orders } from '../db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export const customersRouter = router({
   list: publicProcedure
-    .query(async () => {
-      // Since we might not have a direct customers table, we could derive them from orders
-      // but the goal is to have a dedicated customers table.
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('created_at', { ascending: false });
+    .query(async ({ ctx }) => {
+      const restaurantId = ctx.restaurantId;
+      if (!restaurantId) return [];
 
-      if (error) {
-        console.error('Error fetching customers:', error);
-        return [];
-      }
-      return data;
+      return await db.select().from(customers)
+        .where(eq(customers.restaurantId, restaurantId))
+        .orderBy(desc(customers.createdAt));
     }),
 
   getDetails: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const { data: customer } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('id', input.id)
-        .single();
-
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('customer_id', input.id)
-        .order('created_at', { ascending: false });
+      const [customer] = await db.select().from(customers).where(eq(customers.id, input.id));
+      
+      const resOrders = await db.select().from(orders)
+        .where(eq(orders.customerId, input.id))
+        .orderBy(desc(orders.createdAt));
 
       return {
         ...customer,
-        orders
+        orders: resOrders
       };
     }),
 });
