@@ -17,6 +17,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/health', (req, res) => {
+  res.send('OK - Server is running');
+});
+
 import { createContext } from './src/server/trpc';
 
 import multer from 'multer';
