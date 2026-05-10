@@ -1,5 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 import postgres from 'postgres';
 import * as dotenv from 'dotenv';
 
@@ -19,7 +20,14 @@ if (!supabaseUrl || !supabaseKey || !databaseUrl) {
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    persistSession: false
+  },
+  realtime: {
+    transport: ws
+  }
+});
 const sql = postgres(databaseUrl);
 
 async function migrate() {
