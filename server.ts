@@ -75,6 +75,12 @@ app.use('/uploads', express.static(uploadsPath));
 // Serve static files from the React app
 const distPath = path.join(__dirname, 'dist');
 console.log(`[LOG] Serving static files from: ${distPath}`);
+try {
+  const files = fs.readdirSync(distPath);
+  console.log(`[LOG] Files in dist: ${files.join(', ')}`);
+} catch (err: any) {
+  console.error(`[ERROR] Could not read dist folder: ${err.message}`);
+}
 if (fs.existsSync(path.join(distPath, 'index.html'))) {
   console.log(`[LOG] index.html found at: ${path.join(distPath, 'index.html')}`);
 } else {
