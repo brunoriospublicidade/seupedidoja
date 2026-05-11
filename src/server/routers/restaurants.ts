@@ -259,67 +259,43 @@ export const restaurantsRouter = router({
 
   getEvolutionSettings: publicProcedure
     .query(async ({ ctx }) => {
-      const restaurantId = ctx.restaurantId;
-      
-      // Forçar criação das colunas caso a migração do servidor tenha falhado
-      try {
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_api_url TEXT;`);
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_api_key TEXT;`);
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_instance TEXT;`);
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS cep TEXT;`);
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS complement TEXT;`);
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS city TEXT;`);
-        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS state TEXT;`);
-      } catch (e) {
-        console.error('[SYNC ERROR]', e);
-      }
+      // 1. Buscar configurações globais
+      const [configRow] = await db.select().from(settings).where(eq(settings.key, 'marketing_config'));
+      const config = (configRow?.value as any) || {};
 
-      const [restaurant] = restaurantId 
-        ? await db.select().from(restaurants).where(eq(restaurants.id, restaurantId))
-        : [];
-        
       return {
-        ctxId: restaurantId || 'NÃO RECEBIDO',
-        id: restaurant?.id,
-        name: restaurant?.name,
-        hasUrl: !!restaurant?.evolutionApiUrl,
-        hasKey: !!restaurant?.evolutionApiKey,
-        hasInstance: !!restaurant?.evolutionInstance,
-        apiUrl: restaurant?.evolutionApiUrl,
-        instance: restaurant?.evolutionInstance,
-        rawData: JSON.stringify(restaurant) // Para diagnóstico profundo
+        ctxId: ctx.restaurantId || 'NÃO RECEBIDO',
+        hasUrl: !!config.evolution_url,
+        hasKey: !!config.evolution_key,
+        hasInstance: !!config.evolution_instance,
+        apiUrl: config.evolution_url,
+        instance: config.evolution_instance,
+        isGlobal: true,
+        rawData: JSON.stringify(config)
       };
     }),
 
   testWhatsApp: publicProcedure
     .input(z.object({
-      number: z.string(),
-      text: z.string()
+      phone: z.string()
     }))
-    .mutation(async ({ input, ctx }) => {
-      const restaurantId = ctx.restaurantId;
-      if (!restaurantId) throw new Error('Não autenticado');
+    .mutation(async ({ input }) => {
+      // 1. Buscar configurações globais
+      const [configRow] = await db.select().from(settings).where(eq(settings.key, 'marketing_config'));
+      const config = (configRow?.value as any) || {};
 
-      const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, restaurantId));
-      
-      console.log('[DEBUG TEST] Restaurante encontrado:', { 
-        id: restaurant?.id, 
-        hasUrl: !!restaurant?.evolutionApiUrl, 
-        hasKey: !!restaurant?.evolutionApiKey, 
-        hasInstance: !!restaurant?.evolutionInstance 
-      });
+      const apiUrl = config.evolution_url?.replace(/\/$/, '').trim();
+      const apiKey = config.evolution_key?.trim();
+      const instance = config.evolution_instance?.trim();
 
-      if (!restaurant?.evolutionApiUrl || !restaurant?.evolutionApiKey || !restaurant?.evolutionInstance) {
-        throw new Error('Configurações da Evolution API não encontradas para este restaurante.');
+      if (!apiUrl || !apiKey || !instance) {
+        throw new Error('Configurações globais da Evolution API não encontradas.');
       }
 
-      const apiUrl = restaurant.evolutionApiUrl.trim().replace(/\/+$/, '');
-      const apiKey = restaurant.evolutionApiKey.trim();
-      const instance = restaurant.evolutionInstance.trim();
-
-      const recipientRaw = input.number.replace(/\D/g, '');
+      const recipientRaw = input.phone.replace(/\D/g, '');
       const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
+
+      console.log('[WHATSAPP TEST GLOBAL] Enviando para:', recipient);
 
       try {
         const response = await fetch(`${apiUrl}/message/sendText/${instance}`, {
@@ -331,24 +307,19 @@ export const restaurantsRouter = router({
           },
           body: JSON.stringify({
             number: recipient,
-            options: {
-              delay: 1200,
-              presence: 'composing',
-              linkPreview: false
-            },
-            text: input.text
+            options: { delay: 1200, presence: 'composing', linkPreview: false },
+            text: `🚀 *TESTE DE CONEXÃO GLOBAL*\n\nSeu sistema está conectado corretamente à Evolution API!\n\n*Status:* Operacional\n*Data:* ${new Date().toLocaleString('pt-BR')}`
           })
         });
 
-        const responseData = await response.json();
-
         if (!response.ok) {
-          return { success: false, error: responseData };
+          const errBody = await response.text();
+          return { success: false, error: errBody };
         }
 
-        return { success: true, data: responseData };
-      } catch (error: any) {
-        return { success: false, error: error.message };
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err.message };
       }
     }),
 });

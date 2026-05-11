@@ -425,64 +425,6 @@ const SettingsPage = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Evolution API Integration */}
-              <div className="pt-8 border-t border-slate-50 dark:border-slate-800 space-y-6">
-                <div className="flex items-center gap-2">
-                  <Zap size={16} className="text-primary" />
-                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Integração Evolution API (WhatsApp Automático)</h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2 md:col-span-2">
-                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">URL da API (ex: https://api.sua-evolution.com)</label>
-                     <input 
-                       type="text" 
-                       value={formData.evolution_api_url} 
-                       onChange={(e) => setFormData({...formData, evolution_api_url: e.target.value})} 
-                       className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
-                       placeholder="https://sua-api.com"
-                     />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Global API Key</label>
-                     <input 
-                       type="password" 
-                       value={formData.evolution_api_key} 
-                       onChange={(e) => setFormData({...formData, evolution_api_key: e.target.value})} 
-                       className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
-                       placeholder="Sua API Key"
-                     />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nome da Instância</label>
-                     <input 
-                       type="text" 
-                       value={formData.evolution_instance} 
-                       onChange={(e) => setFormData({...formData, evolution_instance: e.target.value})} 
-                       className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
-                       placeholder="Ex: Restaurante01"
-                     />
-                  </div>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={() => {
-                      wsMutation.mutate({
-                        evolution_api_url: formData.evolution_api_url,
-                        evolution_api_key: formData.evolution_api_key,
-                        evolution_instance: formData.evolution_instance,
-                      });
-                    }}
-                    disabled={wsMutation.isLoading}
-                    className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95 disabled:opacity-50"
-                  >
-                    {wsMutation.isLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    Salvar Conexão WhatsApp
-                  </button>
-                </div>
-                <p className="text-[10px] text-slate-400 italic">Esses dados permitem que o sistema envie notificações automáticas sem precisar abrir o link do WhatsApp.</p>
-              </div>
             </div>
           </div>
         </div>
