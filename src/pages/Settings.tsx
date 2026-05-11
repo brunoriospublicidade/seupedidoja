@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building2, MessageCircle, Clock, Camera, Loader2, Globe, FileText, CreditCard, CheckCircle2, ShieldCheck, Zap, Rocket, Image as ImageIcon, PartyPopper } from 'lucide-react';
+import { Save, Building2, MessageCircle, Clock, Camera, Loader2, Globe, FileText, CreditCard, CheckCircle2, ShieldCheck, Zap, Rocket, Image as ImageIcon, PartyPopper, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trpc } from '../lib/trpc';
