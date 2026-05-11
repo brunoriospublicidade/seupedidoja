@@ -115,8 +115,8 @@ const Sidebar = () => {
   };
 
   const menuItems = [
-    { id: 'orders', label: 'Pedidos', icon: ShoppingBag, path: '/admin/pedidos' },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+    { id: 'orders', label: 'Pedidos', icon: ShoppingBag, path: '/admin/pedidos', isHighlighted: true },
     { id: 'products', label: 'Produtos', icon: UtensilsCrossed, path: '/admin/produtos' },
     { id: 'categories', label: 'Categorias', icon: ListTree, path: '/admin/categorias' },
     { id: 'optionals', label: 'Complementos', icon: PlusCircle, path: '/admin/complementos' },
@@ -139,7 +139,7 @@ const Sidebar = () => {
   const menuGroups = [
     {
       title: 'Gestão da Loja',
-      items: menuItems.map(i => ({ href: i.path, icon: i.icon, label: i.label }))
+      items: menuItems.map(i => ({ href: i.path, icon: i.icon, label: i.label, isHighlighted: (i as any).isHighlighted }))
     },
     ...(role === 'admin' ? [{
       title: 'Administração do Sistema',
@@ -184,23 +184,29 @@ const Sidebar = () => {
               </motion.h3>
             )}
             <div className="space-y-1">
-              {group.items.map((item) => {
+              {group.items.map((item: any) => {
                 const isActive = location === item.href;
+                const showHighlight = item.isHighlighted && !isActive;
                 return (
-                  <Link key={item.href} href={item.href} className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group ${
+                  <Link key={item.href} href={item.href} className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group relative ${
                       isActive 
                       ? 'bg-primary text-white font-bold shadow-lg shadow-primary/20' 
+                      : showHighlight
+                      ? 'bg-primary/5 border border-primary/20 text-white hover:bg-primary/10 shadow-sm'
                       : 'hover:bg-white/10 text-white/70 hover:text-white'
                     }`}>
-                      <item.icon size={20} className={isActive ? 'text-white' : 'group-hover:text-white'} />
+                      <item.icon size={20} className={isActive ? 'text-white' : showHighlight ? 'text-primary' : 'group-hover:text-white'} />
                       {isOpen && (
                         <motion.span
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
-                          className="text-sm"
+                          className={`text-sm ${showHighlight ? 'font-bold text-white' : ''}`}
                         >
                           {item.label}
                         </motion.span>
+                      )}
+                      {showHighlight && isOpen && (
+                        <div className="absolute right-3 w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
                       )}
                   </Link>
                 );
