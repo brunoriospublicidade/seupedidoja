@@ -32,8 +32,11 @@ const OrdersPage = () => {
   const { data: orders, isLoading } = trpc.orders.list.useQuery();
 
   const updateStatus = trpc.orders.updateStatus?.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       utils.orders.list.invalidate();
+      if (selectedOrder?.id === data?.id) {
+        setSelectedOrder(data);
+      }
       toast.success('Status atualizado!');
     }
   });
@@ -167,9 +170,27 @@ const OrdersPage = () => {
                   <div className="space-y-3">
                     <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mudar Status</div>
                     <div className="grid grid-cols-2 gap-2">
-                      <button className="p-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-black uppercase hover:bg-blue-100 transition-colors">Preparar</button>
-                      <button className="p-3 bg-purple-50 text-purple-600 rounded-2xl text-xs font-black uppercase hover:bg-purple-100 transition-colors">Despachar</button>
-                      <button className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-black uppercase hover:bg-emerald-100 transition-colors col-span-2">Finalizar</button>
+                      <button 
+                        onClick={() => updateStatus.mutate({ orderId: selectedOrder.id, status: 'preparing' })}
+                        disabled={updateStatus.isLoading}
+                        className="p-3 bg-blue-50 text-blue-600 rounded-2xl text-xs font-black uppercase hover:bg-blue-100 transition-colors disabled:opacity-50"
+                      >
+                        Preparar
+                      </button>
+                      <button 
+                        onClick={() => updateStatus.mutate({ orderId: selectedOrder.id, status: 'shipped' })}
+                        disabled={updateStatus.isLoading}
+                        className="p-3 bg-purple-50 text-purple-600 rounded-2xl text-xs font-black uppercase hover:bg-purple-100 transition-colors disabled:opacity-50"
+                      >
+                        Despachar
+                      </button>
+                      <button 
+                        onClick={() => updateStatus.mutate({ orderId: selectedOrder.id, status: 'delivered' })}
+                        disabled={updateStatus.isLoading}
+                        className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-black uppercase hover:bg-emerald-100 transition-colors col-span-2 disabled:opacity-50"
+                      >
+                        Finalizar Pedido
+                      </button>
                     </div>
                   </div>
                 </div>

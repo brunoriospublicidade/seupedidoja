@@ -117,6 +117,45 @@ export const ordersRouter = router({
         .set({ status: input.status })
         .where(eq(orders.id, input.orderId))
         .returning();
+
+      if (!order) return null;
+
+      // Enviar notificação via WhatsApp para o cliente
+      try {
+        const [customerData] = await db.select().from(customers).where(eq(customers.id, order.customerId));
+        const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, order.restaurantId));
+
+        if (customerData && restaurant?.evolutionApiUrl && restaurant?.evolutionApiKey && restaurant?.evolutionInstance) {
+          let statusMsg = '';
+          if (input.status === 'preparing') statusMsg = '👨‍🍳 Seu pedido está sendo preparado agora!';
+          if (input.status === 'shipped') statusMsg = '🛵 Ótimas notícias! Seu pedido saiu para entrega!';
+          if (input.status === 'delivered') statusMsg = '✅ Seu pedido foi entregue. Bom apetite! 🍔';
+          if (input.status === 'cancelled') statusMsg = '❌ Sinto muito, seu pedido foi cancelado pelo restaurante.';
+
+          if (statusMsg) {
+            const messageText = `Olá, *${customerData.name}*!\n\n${statusMsg}\n\n*Pedido:* #${order.id.slice(-4).toUpperCase()}\n*Restaurante:* ${restaurant.name}`;
+
+            const recipientRaw = customerData.phone.replace(/\D/g, '');
+            const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
+
+            await fetch(`${restaurant.evolutionApiUrl}/message/sendText/${restaurant.evolutionInstance}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': restaurant.evolutionApiKey
+              },
+              body: JSON.stringify({
+                number: recipient,
+                text: messageText,
+                delay: 1200
+              })
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[STATUS WHATSAPP ERROR]', error);
+      }
+
       return order;
     }),
 });
