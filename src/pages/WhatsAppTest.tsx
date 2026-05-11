@@ -45,6 +45,7 @@ const WhatsAppTestPage = () => {
              <Loader2 className="animate-spin text-primary" size={16} />
            ) : (
              <div className="space-y-1">
+               <div className="text-[9px] font-mono text-slate-400 mb-1">ID: {settings?.ctxId}</div>
                <div className="flex items-center gap-2 text-[10px] font-bold">
                  <span className={settings?.hasUrl ? 'text-emerald-500' : 'text-red-500'}>● URL: {settings?.hasUrl ? 'OK' : 'Faltando'}</span>
                </div>

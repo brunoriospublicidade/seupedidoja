@@ -215,9 +215,12 @@ export const restaurantsRouter = router({
   getEvolutionSettings: publicProcedure
     .query(async ({ ctx }) => {
       const restaurantId = ctx.restaurantId;
-      if (!restaurantId) return null;
-      const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, restaurantId));
+      const [restaurant] = restaurantId 
+        ? await db.select().from(restaurants).where(eq(restaurants.id, restaurantId))
+        : [];
+        
       return {
+        ctxId: restaurantId || 'NÃO RECEBIDO',
         id: restaurant?.id,
         name: restaurant?.name,
         hasUrl: !!restaurant?.evolutionApiUrl,
