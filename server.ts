@@ -90,7 +90,7 @@ if (fs.existsSync(path.join(distPath, 'index.html'))) {
 app.use(express.static(distPath));
 
 // Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
+app.get('/*', (req, res) => {
   if (req.url.startsWith('/trpc')) return;
   if (req.url.startsWith('/api/upload')) return;
   if (req.url.startsWith('/uploads')) return;
