@@ -15,12 +15,23 @@ app.use(express.json());
 
 import { db } from './src/server/db';
 import { sql } from 'drizzle-orm';
+import { restaurants } from './src/server/db/schema';
 
 // Database Connection Check
 const checkDb = async () => {
   try {
-    await db.execute(sql`SELECT 1`);
+    const test = await db.select().from(restaurants).limit(1);
     console.log('[LOG] Database connection successful');
+    
+    // Migrações manuais de emergência para evitar erros de coluna ausente
+    try {
+      await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS address TEXT;`);
+      await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS password TEXT;`);
+      await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
+      console.log('[LOG] Manual migrations applied successfully');
+    } catch (e) {
+      console.error('[LOG] Manual migration warning (can be ignored if already exists):', e);
+    }
   } catch (err: any) {
     console.error('[ERROR] Database connection failed:', err.message);
   }
