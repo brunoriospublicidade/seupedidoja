@@ -56,6 +56,9 @@ export const ordersRouter = router({
         name: input.customer.name,
         phone: input.customer.phone,
         address: input.customer.address,
+      }).onConflictDoUpdate({
+        target: [customers.phone, customers.restaurantId],
+        set: { name: input.customer.name, address: input.customer.address }
       }).returning();
 
       // 2. Create order
@@ -67,44 +70,37 @@ export const ordersRouter = router({
         status: 'pending'
       }).returning();
 
-      // 3. Get restaurant settings for Evolution API
-      const [restaurant] = await db.select()
-        .from(restaurants)
-        .where(eq(restaurants.id, input.restaurantId));
+      // 3. Notificar o RESTAURANTE (Opcional, mas útil)
+      try {
+        const [configRow] = await db.select().from(settings).where(eq(settings.key, 'marketing_config'));
+        const config = (configRow?.value as any) || {};
+        const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, input.restaurantId));
 
-      // 4. Send WhatsApp via Evolution API if configured
-      if (restaurant?.evolutionApiUrl && restaurant?.evolutionApiKey && restaurant?.evolutionInstance) {
-        try {
-          const messageText = `*Novo Pedido Recebido!* 🍔\n\n` +
+        const apiUrl = config.evolution_url?.replace(/\/$/, '').trim();
+        const apiKey = config.evolution_key?.trim();
+        const instance = config.evolution_instance?.trim();
+
+        if (apiUrl && apiKey && instance && restaurant?.whatsapp) {
+          const messageText = `🔔 *NOVO PEDIDO RECEBIDO!* (#${order.id.slice(-4).toUpperCase()})\n\n` +
             `*Cliente:* ${input.customer.name}\n` +
-            `*Telefone:* ${input.customer.phone}\n` +
-            `*Endereço:* ${input.customer.address || 'Não informado'}\n\n` +
-            `*Itens:* \n${input.items.map((i: any) => `- ${i.quantity}x ${i.name} (R$ ${i.price})`).join('\n')}\n\n` +
-            `*Total:* R$ ${input.total.toFixed(2)}`;
+            `*Valor:* R$ ${input.total.toFixed(2)}\n\n` +
+            `Acesse o painel para gerenciar o pedido.`;
 
-          const apiUrl = restaurant.evolutionApiUrl.trim().replace(/\/+$/, '');
-          const recipientRaw = restaurant.whatsapp?.replace(/\D/g, '') || '';
+          const recipientRaw = restaurant.whatsapp.replace(/\D/g, '');
           const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
 
-          if (recipient) {
-            await fetch(`${apiUrl}/message/sendText/${restaurant.evolutionInstance.trim()}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': restaurant.evolutionApiKey.trim(),
-                'accept': '*/*'
-              },
-              body: JSON.stringify({
-                number: recipient,
-                text: messageText,
-                delay: 1200,
-                linkPreview: false
-              })
-            });
-          }
-        } catch (error) {
-          console.error('[EVOLUTION API ERROR]', error);
+          await fetch(`${apiUrl}/message/sendText/${instance}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': apiKey, 'accept': '*/*' },
+            body: JSON.stringify({
+              number: recipient,
+              textMessage: { text: messageText },
+              options: { delay: 1200, presence: 'composing', linkPreview: false }
+            })
+          });
         }
+      } catch (e) {
+        console.error('[NOTIFY RESTAURANT ERROR]', e);
       }
 
       return order;
@@ -113,7 +109,7 @@ export const ordersRouter = router({
   updateStatus: publicProcedure
     .input(z.object({
       orderId: z.string(),
-      status: z.enum(['pending', 'preparing', 'shipped', 'delivered', 'cancelled'])
+      status: z.enum(['pending', 'received', 'preparing', 'shipped', 'delivered', 'cancelled'])
     }))
     .mutation(async ({ input }) => {
       const [order] = await db.update(orders)
@@ -125,7 +121,6 @@ export const ordersRouter = router({
 
       // Enviar notificação via WhatsApp para o cliente
       try {
-        // 1. Buscar configurações globais da plataforma
         const [configRow] = await db.select().from(settings).where(eq(settings.key, 'marketing_config'));
         const config = (configRow?.value as any) || {};
 
@@ -133,51 +128,45 @@ export const ordersRouter = router({
         const apiKey = config.evolution_key?.trim();
         const instance = config.evolution_instance?.trim();
 
-        if (!apiUrl || !apiKey || !instance) {
-          console.log('[WHATSAPP] Pula envio: Configurações globais da Evolution API não encontradas.');
-          return order;
-        }
+        if (!apiUrl || !apiKey || !instance) return order;
 
-        // 2. Buscar dados do cliente e restaurante
         const [orderData] = await db.select({
           customerPhone: customers.phone,
           customerName: customers.name,
+          customerAddress: customers.address,
           restaurantName: restaurants.name
         }).from(orders)
           .innerJoin(customers, eq(orders.customerId, customers.id))
           .innerJoin(restaurants, eq(orders.restaurantId, restaurants.id))
           .where(eq(orders.id, input.orderId));
 
-        if (!orderData || !orderData.customerPhone) {
-          console.log('[WHATSAPP] Pula envio: Dados do cliente não encontrados.');
-          return order;
-        }
+        if (!orderData || !orderData.customerPhone) return order;
 
         let statusMsg = '';
+        let detailedSummary = '';
+
+        if (input.status === 'received') {
+          statusMsg = '✅ *Seu pedido foi recebido com sucesso!*';
+          const itemsList = (order.items as any[]).map(i => `• ${i.quantity}x ${i.name} - R$ ${(i.price * i.quantity).toFixed(2)}`).join('\n');
+          detailedSummary = `\n\n*RESUMO DO PEDIDO:*\n${itemsList}\n\n*Total:* R$ ${Number(order.total).toFixed(2)}\n*Endereço:* ${orderData.customerAddress || 'Retirada no Local'}\n\n🕒 Seu pedido começará a ser preparado em instantes.`;
+        }
+        
         if (input.status === 'preparing') statusMsg = '👨‍🍳 Seu pedido está sendo preparado agora!';
         if (input.status === 'shipped') statusMsg = '🛵 Ótimas notícias! Seu pedido saiu para entrega!';
         if (input.status === 'delivered') statusMsg = '✅ Seu pedido foi entregue. Bom apetite! 🍔';
         if (input.status === 'cancelled') statusMsg = '❌ Sinto muito, seu pedido foi cancelado pelo restaurante.';
 
         if (statusMsg) {
-          const messageText = `Olá, *${orderData.customerName}*!\n\n${statusMsg}\n\n*Pedido:* #${order.id.slice(-4).toUpperCase()}\n*Restaurante:* ${orderData.restaurantName}`;
+          const messageText = `Olá, *${orderData.customerName}*!\n\n${statusMsg}${detailedSummary}\n\n*Pedido:* #${order.id.slice(-4).toUpperCase()}\n*Restaurante:* ${orderData.restaurantName}`;
           const recipientRaw = orderData.customerPhone.replace(/\D/g, '');
           const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
 
-          console.log('[WHATSAPP GLOBAL] Enviando Status para:', recipient);
-
           await fetch(`${apiUrl}/message/sendText/${instance}`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': apiKey,
-              'accept': '*/*'
-            },
+            headers: { 'Content-Type': 'application/json', 'apikey': apiKey, 'accept': '*/*' },
             body: JSON.stringify({
               number: recipient,
-              textMessage: {
-                text: messageText
-              },
+              textMessage: { text: messageText },
               options: { delay: 1200, presence: 'composing', linkPreview: false }
             })
           });
