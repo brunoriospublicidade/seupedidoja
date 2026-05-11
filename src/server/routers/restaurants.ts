@@ -208,4 +208,56 @@ export const restaurantsRouter = router({
         })) || [],
       };
     }),
+  testWhatsApp: publicProcedure
+    .input(z.object({
+      number: z.string(),
+      text: z.string()
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const restaurantId = ctx.restaurantId;
+      if (!restaurantId) throw new Error('Não autenticado');
+
+      const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, restaurantId));
+
+      if (!restaurant?.evolutionApiUrl || !restaurant?.evolutionApiKey || !restaurant?.evolutionInstance) {
+        throw new Error('Configurações da Evolution API não encontradas para este restaurante.');
+      }
+
+      const apiUrl = restaurant.evolutionApiUrl.trim().replace(/\/+$/, '');
+      const apiKey = restaurant.evolutionApiKey.trim();
+      const instance = restaurant.evolutionInstance.trim();
+
+      const recipientRaw = input.number.replace(/\D/g, '');
+      const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
+
+      try {
+        const response = await fetch(`${apiUrl}/message/sendText/${instance}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': apiKey,
+            'accept': '*/*'
+          },
+          body: JSON.stringify({
+            number: recipient,
+            options: {
+              delay: 1200,
+              presence: 'composing',
+              linkPreview: false
+            },
+            text: input.text
+          })
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          return { success: false, error: responseData };
+        }
+
+        return { success: true, data: responseData };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    }),
 });

@@ -20,7 +20,8 @@ import {
   LogOut,
   Building2,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  MessageCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
@@ -47,6 +48,7 @@ import AdminPaymentsPage from './pages/AdminPayments';
 import AdminReportsPage from './pages/AdminReports';
 import AdminSettingsPage from './pages/AdminSettings';
 import OrdersPage from './pages/Orders';
+import WhatsAppTestPage from './pages/WhatsAppTest';
 
 // Auth Context
 const AuthContext = createContext({
@@ -119,6 +121,7 @@ const Sidebar = () => {
     { id: 'coupons', label: 'Cupons', icon: Ticket, path: '/admin/cupons' },
     { id: 'customers', label: 'Clientes', icon: Users, path: '/admin/clientes' },
     { id: 'marketing', label: 'Mala Direta', icon: MessageSquare, path: '/admin/mala-direta' },
+    { id: 'whatsapp-test', label: 'Teste WhatsApp', icon: MessageCircle, path: '/admin/teste-whatsapp' },
     { id: 'reports', label: 'Relatórios', icon: PieChart, path: '/admin/relatorios' },
     { id: 'payments', label: 'Minha Assinatura', icon: CreditCard, path: '/admin/pagamentos' },
   ];
@@ -351,6 +354,9 @@ const App = () => {
           </Route>
           <Route path="/admin/pedidos">
             <Layout><OrdersPage /></Layout>
+          </Route>
+          <Route path="/admin/teste-whatsapp">
+            <Layout><WhatsAppTestPage /></Layout>
           </Route>
           <Route path="/admin">
             <Layout><DashboardPage /></Layout>
