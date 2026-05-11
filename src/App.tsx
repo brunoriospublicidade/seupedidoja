@@ -47,6 +47,7 @@ import AdminUsersPage from './pages/AdminUsers';
 import AdminPaymentsPage from './pages/AdminPayments';
 import AdminReportsPage from './pages/AdminReports';
 import AdminSettingsPage from './pages/AdminSettings';
+import AdminAnalyticsPage from './pages/AdminAnalytics';
 import OrdersPage from './pages/Orders';
 import WhatsAppTestPage from './pages/WhatsAppTest';
 
@@ -129,6 +130,7 @@ const Sidebar = () => {
 
   const adminItems = [
     { id: 'admin-users', label: 'Usuários/Lojas', icon: Building2, path: '/admin/gerenciar-lojas' },
+    { id: 'admin-analytics', label: 'Análise de Performance', icon: TrendingUp, path: '/admin/analise-performance' },
     { id: 'admin-payments', label: 'Pagamentos Plataforma', icon: CreditCard, path: '/admin/pagamentos-plataforma' },
     { id: 'admin-reports', label: 'Relatórios Plataforma', icon: TrendingUp, path: '/admin/relatorios-plataforma' },
     { id: 'admin-settings', label: 'Configurações', icon: Settings, path: '/admin/configuracoes-plataforma' },
@@ -353,6 +355,9 @@ const App = () => {
           </Route>
           <Route path="/admin/gerenciar-lojas">
             <Layout><AdminUsersPage /></Layout>
+          </Route>
+          <Route path="/admin/analise-performance">
+            <Layout><AdminAnalyticsPage /></Layout>
           </Route>
           <Route path="/admin/pagamentos-plataforma">
             <Layout><AdminPaymentsPage /></Layout>

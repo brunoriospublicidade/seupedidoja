@@ -1,7 +1,7 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { db } from '../db';
-import { restaurants, categories, products, optionalGroups, optionalItems, settings } from '../db/schema';
+import { restaurants, categories, products, optionalGroups, optionalItems, settings, orders } from '../db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 
 const generateSlug = (name: string) => {
@@ -188,9 +188,7 @@ export const restaurantsRouter = router({
         .where(eq(restaurants.id, targetId))
         .returning();
       
-      console.log('[UPDATE DEBUG] Result:', !!data);
-        receivedInput: input // Para diagnóstico
-      };
+      return data;
     }),
 
   getPublicMenu: publicProcedure
@@ -292,5 +290,39 @@ export const restaurantsRouter = router({
       } catch (err: any) {
         return { success: false, error: err.message };
       }
+    }),
+  
+  getDetailedAnalytics: publicProcedure
+    .query(async () => {
+      const allRestaurants = await db.select().from(restaurants).orderBy(desc(restaurants.createdAt));
+      
+      const analytics = await Promise.all(allRestaurants.map(async (rest) => {
+        const [productsCountRow] = await db.select({ count: sql<number>`count(*)` }).from(products).where(eq(products.restaurantId, rest.id));
+        const [ordersCountRow] = await db.select({ 
+          count: sql<number>`count(*)`,
+          revenue: sql<number>`sum(total)`
+        }).from(orders).where(eq(orders.restaurantId, rest.id));
+        
+        const [lastOrderRow] = await db.select({ date: orders.createdAt })
+          .from(orders)
+          .where(eq(orders.restaurantId, rest.id))
+          .orderBy(desc(orders.createdAt))
+          .limit(1);
+
+        return {
+          id: rest.id,
+          name: rest.name,
+          email: rest.email,
+          foodType: rest.foodType,
+          subscriptionPlan: rest.subscriptionPlan,
+          productsCount: Number(productsCountRow?.count || 0),
+          ordersCount: Number(ordersCountRow?.count || 0),
+          totalRevenue: Number(ordersCountRow?.revenue || 0),
+          lastOrderAt: lastOrderRow?.date || null,
+          createdAt: rest.createdAt
+        };
+      }));
+
+      return analytics;
     }),
 });
