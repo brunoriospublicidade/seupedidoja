@@ -122,11 +122,12 @@ export const ordersRouter = router({
 
       // Enviar notificação via WhatsApp para o cliente
       try {
-        const [customerData] = await db.select().from(customers).where(eq(customers.id, order.customerId));
-        const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, order.restaurantId));
+        if (order.customerId && order.restaurantId) {
+          const [customerData] = await db.select().from(customers).where(eq(customers.id, order.customerId));
+          const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, order.restaurantId));
 
-        if (customerData && restaurant?.evolutionApiUrl && restaurant?.evolutionApiKey && restaurant?.evolutionInstance) {
-          let statusMsg = '';
+          if (customerData && restaurant?.evolutionApiUrl && restaurant?.evolutionApiKey && restaurant?.evolutionInstance) {
+            let statusMsg = '';
           if (input.status === 'preparing') statusMsg = '👨‍🍳 Seu pedido está sendo preparado agora!';
           if (input.status === 'shipped') statusMsg = '🛵 Ótimas notícias! Seu pedido saiu para entrega!';
           if (input.status === 'delivered') statusMsg = '✅ Seu pedido foi entregue. Bom apetite! 🍔';
