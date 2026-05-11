@@ -227,7 +227,8 @@ export const restaurantsRouter = router({
         hasKey: !!restaurant?.evolutionApiKey,
         hasInstance: !!restaurant?.evolutionInstance,
         apiUrl: restaurant?.evolutionApiUrl,
-        instance: restaurant?.evolutionInstance
+        instance: restaurant?.evolutionInstance,
+        rawData: JSON.stringify(restaurant) // Para diagnóstico profundo
       };
     }),
 

@@ -95,6 +95,14 @@ const WhatsAppTestPage = () => {
           >
             {testMutation.isLoading ? <Loader2 className="animate-spin" /> : <><Send size={20} /> Enviar Teste</>}
           </button>
+
+          {settings?.rawData && (
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="text-[8px] font-mono text-slate-400 overflow-auto max-h-20 break-all bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
+                DB_RAW: {settings.rawData}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Console / Debug */}
