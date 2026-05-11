@@ -484,7 +484,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                           return (
                             <button
                               key={item.id}
-                              onClick={() => toggleOptional(group.id, item.id, group.maxSelection)}
+                              onClick={() => toggleOptional(group.id, item.id, group.maxSelection || 1)}
                               className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
                                 isSelected 
                                 ? 'border-primary bg-primary/5 text-primary' 
