@@ -31,6 +31,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.ts ./
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/drizzle.config.ts ./
 
 # Install tsx globally just in case, but let's try to run directly
 RUN npm install -g tsx
