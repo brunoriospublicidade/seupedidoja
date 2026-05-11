@@ -38,5 +38,6 @@ RUN npm install -g tsx
 
 EXPOSE 4001
 
-# Use a shell script to run migration then start server
-CMD ["sh", "-c", "npm run db:push && tsx server.ts"]
+# Temporarily disabled db:push to bypass drizzle-kit interaction issues
+# CMD ["sh", "-c", "npm run db:push && tsx server.ts"]
+CMD ["tsx", "server.ts"]
