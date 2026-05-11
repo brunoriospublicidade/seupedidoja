@@ -307,8 +307,10 @@ export const restaurantsRouter = router({
           },
           body: JSON.stringify({
             number: recipient,
-            options: { delay: 1200, presence: 'composing', linkPreview: false },
-            text: `🚀 *TESTE DE CONEXÃO GLOBAL*\n\nSeu sistema está conectado corretamente à Evolution API!\n\n*Status:* Operacional\n*Data:* ${new Date().toLocaleString('pt-BR')}`
+            textMessage: {
+              text: `🚀 *TESTE DE CONEXÃO GLOBAL*\n\nSeu sistema está conectado corretamente à Evolution API!\n\n*Status:* Operacional\n*Data:* ${new Date().toLocaleString('pt-BR')}`
+            },
+            options: { delay: 1200, presence: 'composing', linkPreview: false }
           })
         });
 

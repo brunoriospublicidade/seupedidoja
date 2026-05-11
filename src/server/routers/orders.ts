@@ -175,8 +175,10 @@ export const ordersRouter = router({
             },
             body: JSON.stringify({
               number: recipient,
-              options: { delay: 1200, presence: 'composing', linkPreview: false },
-              text: messageText
+              textMessage: {
+                text: messageText
+              },
+              options: { delay: 1200, presence: 'composing', linkPreview: false }
             })
           });
         }
