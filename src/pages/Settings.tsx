@@ -64,7 +64,9 @@ const SettingsPage = () => {
 
   const [formData, setFormData] = useState<any>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadProgressLogo, setUploadProgressLogo] = useState(0);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadProgressBanner, setUploadProgressBanner] = useState(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -216,17 +218,30 @@ const SettingsPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      if (type === 'logo') setUploadingLogo(true);
-      else setUploadingBanner(true);
+      if (type === 'logo') {
+        setUploadingLogo(true);
+        setUploadProgressLogo(0);
+      } else {
+        setUploadingBanner(true);
+        setUploadProgressBanner(0);
+      }
       
-      const url = await uploadImage(file, type === 'logo' ? 'logos' : 'banners');
+      const url = await uploadImage(file, type === 'logo' ? 'logos' : 'banners', (percent) => {
+        if (type === 'logo') setUploadProgressLogo(percent);
+        else setUploadProgressBanner(percent);
+      });
       setFormData({ ...formData, [type === 'logo' ? 'logo_url' : 'banner_url']: url });
       toast.success(`${type === 'logo' ? 'Logo' : 'Banner'} atualizado!`);
     } catch (error) {
       toast.error('Erro ao enviar imagem');
     } finally {
-      if (type === 'logo') setUploadingLogo(false);
-      else setUploadingBanner(false);
+      if (type === 'logo') {
+        setUploadingLogo(false);
+        setUploadProgressLogo(0);
+      } else {
+        setUploadingBanner(false);
+        setUploadProgressBanner(0);
+      }
     }
   };
 
@@ -321,19 +336,46 @@ const SettingsPage = () => {
                   <span className="text-[10px] font-black uppercase tracking-widest">Sem Banner</span>
                 </div>
               )}
-              <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 cursor-pointer">
-                <Camera className="text-white" size={32} />
-                <span className="text-white text-[10px] font-black uppercase tracking-widest">Alterar Banner</span>
-                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
-              </label>
+              {uploadingBanner ? (
+                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+                  <div className="relative w-16 h-16 flex items-center justify-center">
+                    <Loader2 className="animate-spin text-white absolute inset-0" size={64} strokeWidth={1} />
+                    <span className="text-xs font-black text-white">{uploadProgressBanner}%</span>
+                  </div>
+                  <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgressBanner}%` }}
+                      className="h-full bg-primary"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 cursor-pointer">
+                  <Camera className="text-white" size={32} />
+                  <span className="text-white text-[10px] font-black uppercase tracking-widest">Alterar Banner</span>
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
+                </label>
+              )}
 
               <div className="absolute -bottom-10 left-8 z-10">
                 <label className="relative w-32 h-32 rounded-3xl bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden cursor-pointer flex items-center justify-center group/logo">
-                  {formData?.logo_url ? <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" /> : <Camera className="text-slate-400" size={32} />}
+                  {uploadingLogo ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <Loader2 className="animate-spin text-primary" size={24} />
+                      <span className="text-[10px] font-black text-primary">{uploadProgressLogo}%</span>
+                    </div>
+                  ) : formData?.logo_url ? (
+                    <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <Camera className="text-slate-400" size={32} />
+                  )}
                   <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'logo')} />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center">
-                    <Camera className="text-white" size={24} />
-                  </div>
+                  {!uploadingLogo && (
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center">
+                      <Camera className="text-white" size={24} />
+                    </div>
+                  )}
                 </label>
               </div>
             </div>

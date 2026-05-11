@@ -11,6 +11,7 @@ const MenuPage = () => {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<{[key: string]: boolean}>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,13 +132,17 @@ const MenuPage = () => {
 
     try {
       setUploading(true);
-      const url = await uploadImage(file, 'products');
+      setUploadProgress(0);
+      const url = await uploadImage(file, 'products', (percent) => {
+        setUploadProgress(percent);
+      });
       setNewProduct({ ...newProduct, image_url: url });
       toast.success('Imagem enviada!');
     } catch (error) {
       toast.error('Erro ao enviar imagem');
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -324,9 +329,19 @@ const MenuPage = () => {
                   <label className="text-sm font-bold text-slate-600 dark:text-slate-400">Foto do Produto</label>
                   <label className="aspect-square rounded-3xl bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-primary transition-all group overflow-hidden relative shadow-inner">
                     {uploading ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="animate-spin text-primary" size={32} />
-                        <span className="text-xs font-bold text-slate-400">Enviando...</span>
+                      <div className="flex flex-col items-center gap-4 w-full px-8">
+                        <div className="relative w-20 h-20 flex items-center justify-center">
+                          <Loader2 className="animate-spin text-primary absolute inset-0" size={80} strokeWidth={1} />
+                          <span className="text-sm font-black text-primary">{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgress}%` }}
+                            className="h-full bg-primary"
+                          />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Enviando Arquivo...</span>
                       </div>
                     ) : newProduct.image_url ? (
                       <>

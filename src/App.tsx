@@ -123,7 +123,6 @@ const Sidebar = () => {
     { id: 'coupons', label: 'Cupons', icon: Ticket, path: '/admin/cupons' },
     { id: 'customers', label: 'Clientes', icon: Users, path: '/admin/clientes' },
     { id: 'marketing', label: 'Mala Direta', icon: MessageSquare, path: '/admin/mala-direta' },
-    { id: 'whatsapp-test', label: 'Teste WhatsApp', icon: MessageCircle, path: '/admin/teste-whatsapp' },
     { id: 'reports', label: 'Relatórios', icon: PieChart, path: '/admin/relatorios' },
     { id: 'payments', label: 'Minha Assinatura', icon: CreditCard, path: '/admin/pagamentos' },
   ];
@@ -133,6 +132,7 @@ const Sidebar = () => {
     { id: 'admin-analytics', label: 'Análise de Performance', icon: TrendingUp, path: '/admin/analise-performance' },
     { id: 'admin-payments', label: 'Pagamentos Plataforma', icon: CreditCard, path: '/admin/pagamentos-plataforma' },
     { id: 'admin-reports', label: 'Relatórios Plataforma', icon: TrendingUp, path: '/admin/relatorios-plataforma' },
+    { id: 'whatsapp-test', label: 'Teste WhatsApp', icon: MessageCircle, path: '/admin/teste-whatsapp' },
     { id: 'admin-settings', label: 'Configurações', icon: Settings, path: '/admin/configuracoes-plataforma' },
   ];
 
