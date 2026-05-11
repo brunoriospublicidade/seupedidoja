@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
 const WhatsAppTestPage = () => {
+  const { data: settings, isLoading: loadingSettings } = trpc.restaurants.getEvolutionSettings.useQuery();
   const [testData, setTestData] = useState({ number: '', text: 'Olá! Este é um teste de conexão do Seu Pedido Já. 🍔' });
   const [debugInfo, setDebugInfo] = useState<any>(null);
 
@@ -30,11 +31,32 @@ const WhatsAppTestPage = () => {
 
   return (
     <div className="space-y-8 max-w-4xl pb-20">
-      <div>
-        <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3">
-          <MessageSquare className="text-primary" size={32} /> Debug WhatsApp
-        </h2>
-        <p className="text-slate-500 font-medium">Ferramenta para testar a comunicação direta com a Evolution API.</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-3xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+            <MessageSquare className="text-primary" size={32} /> Debug WhatsApp
+          </h2>
+          <p className="text-slate-500 font-medium">Ferramenta para testar a comunicação direta com a Evolution API.</p>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+           <div className="text-[10px] font-black uppercase text-slate-400">Status no Servidor</div>
+           {loadingSettings ? (
+             <Loader2 className="animate-spin text-primary" size={16} />
+           ) : (
+             <div className="space-y-1">
+               <div className="flex items-center gap-2 text-[10px] font-bold">
+                 <span className={settings?.hasUrl ? 'text-emerald-500' : 'text-red-500'}>● URL: {settings?.hasUrl ? 'OK' : 'Faltando'}</span>
+               </div>
+               <div className="flex items-center gap-2 text-[10px] font-bold">
+                 <span className={settings?.hasKey ? 'text-emerald-500' : 'text-red-500'}>● Key: {settings?.hasKey ? 'OK' : 'Faltando'}</span>
+               </div>
+               <div className="flex items-center gap-2 text-[10px] font-bold">
+                 <span className={settings?.hasInstance ? 'text-emerald-500' : 'text-red-500'}>● Instância: {settings?.hasInstance ? 'OK' : 'Faltando'}</span>
+               </div>
+             </div>
+           )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -213,6 +213,22 @@ export const restaurantsRouter = router({
         })) || [],
       };
     }),
+  getEvolutionSettings: publicProcedure
+    .query(async ({ ctx }) => {
+      const restaurantId = ctx.restaurantId;
+      if (!restaurantId) return null;
+      const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, restaurantId));
+      return {
+        id: restaurant?.id,
+        name: restaurant?.name,
+        hasUrl: !!restaurant?.evolutionApiUrl,
+        hasKey: !!restaurant?.evolutionApiKey,
+        hasInstance: !!restaurant?.evolutionInstance,
+        apiUrl: restaurant?.evolutionApiUrl,
+        instance: restaurant?.evolutionInstance
+      };
+    }),
+
   testWhatsApp: publicProcedure
     .input(z.object({
       number: z.string(),
