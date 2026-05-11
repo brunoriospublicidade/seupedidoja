@@ -38,5 +38,5 @@ RUN npm install -g tsx
 
 EXPOSE 4001
 
-# Auto-migration enabled now that DB is initialized
-CMD ["sh", "-c", "npm run db:push && tsx server.ts"]
+# Run migrations and start server
+CMD ["sh", "-c", "npx drizzle-kit push:pg --force || echo 'Warning: DB push failed, attempting to start server anyway...' && tsx server.ts"]

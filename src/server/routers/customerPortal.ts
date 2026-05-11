@@ -3,7 +3,7 @@ import { router, publicProcedure } from '../trpc';
 import { db } from '../db';
 import { customers, customerAddresses } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 export const customerPortalRouter = router({
   register: publicProcedure

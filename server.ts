@@ -13,6 +13,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+import { db } from './src/server/db';
+import { sql } from 'drizzle-orm';
+
+// Database Connection Check
+const checkDb = async () => {
+  try {
+    await db.execute(sql`SELECT 1`);
+    console.log('[LOG] Database connection successful');
+  } catch (err: any) {
+    console.error('[ERROR] Database connection failed:', err.message);
+  }
+};
+checkDb();
+
 // --- AUTO-MIGRATION SCRIPT ---
 const port = process.env.PORT || 3001;
 const isDev = process.env.NODE_ENV !== 'production';
