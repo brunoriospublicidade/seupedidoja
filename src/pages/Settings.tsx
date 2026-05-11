@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../App';
 import { Save, Building2, MessageCircle, Clock, Camera, Loader2, Globe, FileText, CreditCard, CheckCircle2, ShieldCheck, Zap, Rocket, Image as ImageIcon, PartyPopper, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import { uploadImage } from '../lib/storage';
 import confetti from 'canvas-confetti';
 
 const SettingsPage = () => {
+  const { role } = useAuth();
   const utils = trpc.useContext();
   const { data: restaurant, isLoading: loadingRestaurant } = trpc.restaurants.get.useQuery();
   const { data: plans, isLoading: loadingPlans } = trpc.plans.list.useQuery();
@@ -697,18 +699,22 @@ const SettingsPage = () => {
                     <p className="text-[10px] text-slate-500 italic">* Este número receberá as notificações de novos pedidos.</p>
                   </div>
                   
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API URL</label>
-                    <input type="text" value={formData.evolution_api_url} onChange={(e) => setFormData({...formData, evolution_api_url: e.target.value})} placeholder="https://api.sua-instancia.com" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API Instance</label>
-                    <input type="text" value={formData.evolution_instance} onChange={(e) => setFormData({...formData, evolution_instance: e.target.value})} placeholder="SeuNomeInstancia" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API Key</label>
-                    <input type="password" value={formData.evolution_api_key} onChange={(e) => setFormData({...formData, evolution_api_key: e.target.value})} placeholder="••••••••••••••••" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
-                  </div>
+                  {role === 'admin' && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API URL</label>
+                        <input type="text" value={formData.evolution_api_url} onChange={(e) => setFormData({...formData, evolution_api_url: e.target.value})} placeholder="https://api.sua-instancia.com" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API Instance</label>
+                        <input type="text" value={formData.evolution_instance} onChange={(e) => setFormData({...formData, evolution_instance: e.target.value})} placeholder="SeuNomeInstancia" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API Key</label>
+                        <input type="password" value={formData.evolution_api_key} onChange={(e) => setFormData({...formData, evolution_api_key: e.target.value})} placeholder="••••••••••••••••" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </motion.div>
