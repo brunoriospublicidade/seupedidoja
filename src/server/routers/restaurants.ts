@@ -167,6 +167,11 @@ export const restaurantsRouter = router({
       if (input.evolution_api_url !== undefined) mappedData.evolutionApiUrl = input.evolution_api_url;
       if (input.evolution_api_key !== undefined) mappedData.evolutionApiKey = input.evolution_api_key;
       if (input.evolution_instance !== undefined) mappedData.evolutionInstance = input.evolution_instance;
+      
+      // Fallback para nomes sem underscore se vierem do frontend
+      if ((input as any).evolutionApiUrl !== undefined) mappedData.evolutionApiUrl = (input as any).evolutionApiUrl;
+      if ((input as any).evolutionApiKey !== undefined) mappedData.evolutionApiKey = (input as any).evolutionApiKey;
+      if ((input as any).evolutionInstance !== undefined) mappedData.evolutionInstance = (input as any).evolutionInstance;
 
       const [data] = await db.update(restaurants)
         .set(mappedData)
@@ -218,6 +223,13 @@ export const restaurantsRouter = router({
       if (!restaurantId) throw new Error('Não autenticado');
 
       const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, restaurantId));
+      
+      console.log('[DEBUG TEST] Restaurante encontrado:', { 
+        id: restaurant?.id, 
+        hasUrl: !!restaurant?.evolutionApiUrl, 
+        hasKey: !!restaurant?.evolutionApiKey, 
+        hasInstance: !!restaurant?.evolutionInstance 
+      });
 
       if (!restaurant?.evolutionApiUrl || !restaurant?.evolutionApiKey || !restaurant?.evolutionInstance) {
         throw new Error('Configurações da Evolution API não encontradas para este restaurante.');
