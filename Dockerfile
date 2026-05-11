@@ -38,6 +38,5 @@ RUN npm install -g tsx
 
 EXPOSE 4001
 
-# Temporarily disabled db:push to bypass drizzle-kit interaction issues
-# CMD ["sh", "-c", "npm run db:push && tsx server.ts"]
-CMD ["tsx", "server.ts"]
+# Auto-migration enabled now that DB is initialized
+CMD ["sh", "-c", "npm run db:push && tsx server.ts"]
