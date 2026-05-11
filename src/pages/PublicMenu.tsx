@@ -359,10 +359,10 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       </div>
 
       {/* Restaurant Info */}
-      <div className="max-w-4xl mx-auto -mt-12 relative px-4">
-        <div className="bg-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left">
-          <div className="w-24 h-24 rounded-2xl bg-white p-1 shadow-lg -mt-16 md:-mt-12 border border-slate-100 overflow-hidden">
-            <img src={menu.restaurant.logoUrl || ""} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+      <div className="max-w-4xl mx-auto -mt-16 relative px-4 z-10">
+        <div className="bg-white p-6 rounded-[32px] shadow-2xl flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left border border-slate-100">
+          <div className="w-32 h-32 rounded-[32px] bg-white p-1 shadow-2xl -mt-20 md:-mt-16 border-[6px] border-white overflow-hidden flex-shrink-0">
+            <img src={menu.restaurant.logoUrl || ""} alt="Logo" className="w-full h-full object-contain rounded-[24px]" />
           </div>
           <div className="flex-1 space-y-2">
             <div className="flex items-center justify-between">

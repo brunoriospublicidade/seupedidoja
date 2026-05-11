@@ -304,9 +304,9 @@ const SettingsPage = () => {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-8"
             >
-              <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-                {/* Banner e Logo */}
-                <div className="relative h-48 bg-slate-100 dark:bg-slate-950 group overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800">
+                {/* Banner */}
+                <div className="relative h-48 bg-slate-100 dark:bg-slate-950 group overflow-hidden rounded-t-[32px]">
                   {formData?.banner_url ? (
                     <img src={formData.banner_url} alt="Banner" className="w-full h-full object-cover" />
                   ) : (
@@ -337,8 +337,8 @@ const SettingsPage = () => {
                     </label>
                   )}
 
-                  <div className="absolute -bottom-10 left-8 z-10">
-                    <label className="relative w-32 h-32 rounded-3xl bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden cursor-pointer flex items-center justify-center group/logo">
+                  <div className="absolute -bottom-12 left-8 z-20">
+                    <label className="relative block w-32 h-32 rounded-[32px] bg-white dark:bg-slate-900 border-[6px] border-white dark:border-slate-900 shadow-2xl overflow-hidden cursor-pointer group/logo transition-transform hover:scale-105 active:scale-95">
                       {uploadingLogo ? (
                         <div className="flex flex-col items-center gap-1">
                           <Loader2 className="animate-spin text-primary" size={24} />
