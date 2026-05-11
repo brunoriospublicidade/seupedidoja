@@ -176,6 +176,23 @@ export const restaurantsRouter = router({
         .where(eq(restaurants.id, targetId))
         .returning();
       
+      // FORÇA BRUTA: Garantir que os campos da Evolution API sejam salvos via SQL direto
+      if (input.evolution_api_url || input.evolution_api_key || input.evolution_instance) {
+        try {
+          await db.execute(sql`
+            UPDATE restaurants 
+            SET 
+              evolution_api_url = ${input.evolution_api_url || null},
+              evolution_api_key = ${input.evolution_api_key || null},
+              evolution_instance = ${input.evolution_instance || null}
+            WHERE id = ${targetId}
+          `);
+          console.log('[DB] Evolution API fields forced via SQL');
+        } catch (e) {
+          console.error('[DB ERROR] Force update failed:', e);
+        }
+      }
+      
       console.log('[UPDATE DEBUG] Result:', !!data);
       return data;
     }),
