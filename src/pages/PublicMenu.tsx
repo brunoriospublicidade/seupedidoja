@@ -70,7 +70,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
             <img src={menu.restaurant.logoUrl || ""} alt="Logo" className="w-full h-full object-contain rounded-xl" />
           </div>
           <div className="flex-1 space-y-2">
-            <h1 className="text-2xl font-bold text-slate-800">{menu.restaurant.name}</h1>
+            <h1 className="text-2xl font-bold text-slate-800">{menu.restaurant.name || 'Restaurante'}</h1>
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm text-slate-500 font-medium">
               <span className="flex items-center gap-1 text-amber-500"><Star size={16} fill="currentColor" /> 4.8</span>
               <span className="flex items-center gap-1"><Clock size={16} /> 30-45 min</span>

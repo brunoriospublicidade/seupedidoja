@@ -199,11 +199,11 @@ const AdminUsersPage = () => {
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors uppercase">
-                        {res.name.substring(0, 2)}
+                        {(res.name || '??').substring(0, 2)}
                       </div>
                       <div>
                         <div className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                           {res.name}
+                           {res.name || 'Sem Nome'}
                            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-black uppercase">{res.foodType}</span>
                         </div>
                         <div className="text-xs text-primary font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => window.open(`/menu/${res.slug}`, '_blank')}>
