@@ -26,6 +26,14 @@ export const restaurantsRouter = router({
       }
       
       const [data] = await db.select().from(restaurants).where(eq(restaurants.id, targetId));
+      
+      // Auto-promoção para o dono da plataforma
+      if (data && data.email === 'brunoriospublicidade@gmail.com' && data.role !== 'admin') {
+        data.role = 'admin';
+        // Opcional: Atualizar no banco de forma assíncrona
+        db.update(restaurants).set({ role: 'admin' }).where(eq(restaurants.id, data.id)).execute().catch(console.error);
+      }
+
       return data;
     }),
 
@@ -135,6 +143,8 @@ export const restaurantsRouter = router({
       evolution_api_url: z.string().optional(),
       evolution_api_key: z.string().optional(),
       evolution_instance: z.string().optional(),
+      role: z.string().optional(),
+      delivery_config: z.any().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
@@ -167,6 +177,8 @@ export const restaurantsRouter = router({
       if (input.evolution_api_url !== undefined) mappedData.evolutionApiUrl = input.evolution_api_url;
       if (input.evolution_api_key !== undefined) mappedData.evolutionApiKey = input.evolution_api_key;
       if (input.evolution_instance !== undefined) mappedData.evolutionInstance = input.evolution_instance;
+      if (input.role) mappedData.role = input.role;
+      if (input.delivery_config) mappedData.deliveryConfig = input.delivery_config;
       
       console.log('[UPDATE DEBUG] Restaurant ID:', targetId);
       console.log('[UPDATE DEBUG] Mapped Data:', mappedData);

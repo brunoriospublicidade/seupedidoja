@@ -29,6 +29,7 @@ export const restaurants = pgTable('restaurants', {
   evolutionApiUrl: text('evolution_api_url'),
   evolutionApiKey: text('evolution_api_key'),
   evolutionInstance: text('evolution_instance'),
+  role: text('role').default('user'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

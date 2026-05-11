@@ -113,6 +113,7 @@ const SettingsPage = () => {
         banner_url: restaurant.bannerUrl || '',
         logo_url: restaurant.logoUrl || '',
         opening_hours: initializedHours,
+        delivery_config: restaurant.deliveryConfig || { type: 'fixed', fixedFee: 0, neighborhoods: [], baseFee: 0, feePerKm: 0 },
         evolution_api_url: restaurant.evolutionApiUrl || '',
         evolution_api_key: restaurant.evolutionApiKey || '',
         evolution_instance: restaurant.evolutionInstance || '',
@@ -193,7 +194,8 @@ const SettingsPage = () => {
       complement: formData.complement,
       neighborhood: formData.neighborhood,
       city: formData.city,
-      state: formData.state
+      state: formData.state,
+      delivery_config: formData.delivery_config
     });
   };
 
@@ -383,7 +385,7 @@ const SettingsPage = () => {
                       type="text" 
                       value={formData.address} 
                       onChange={(e) => setFormData({...formData, address: e.target.value})} 
-                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" 
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 outline-none font-bold" 
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
@@ -424,6 +426,152 @@ const SettingsPage = () => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Configurações de Frete */}
+              <div className="pt-8 border-t border-slate-50 dark:border-slate-800 space-y-6">
+                <div className="flex items-center gap-2">
+                  <Rocket size={16} className="text-primary" />
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Taxas de Entrega</h4>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[
+                    { id: 'fixed', label: 'Valor Fixo', icon: <Zap size={18} /> },
+                    { id: 'neighborhood', label: 'Por Bairro', icon: <MapPin size={18} /> },
+                    { id: 'distance', label: 'Por Distância', icon: <Globe size={18} /> },
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      onClick={() => setFormData({
+                        ...formData,
+                        delivery_config: { ...formData.delivery_config, type: type.id }
+                      })}
+                      className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-3 font-bold ${
+                        formData.delivery_config?.type === type.id
+                        ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10'
+                        : 'border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-primary/20'
+                      }`}
+                    >
+                      {type.icon}
+                      <span className="text-xs uppercase tracking-widest">{type.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {formData.delivery_config?.type === 'fixed' && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valor da Taxa (R$)</label>
+                        <input 
+                          type="number" 
+                          value={formData.delivery_config.fixedFee || 0}
+                          onChange={(e) => setFormData({
+                            ...formData,
+                            delivery_config: { ...formData.delivery_config, fixedFee: Number(e.target.value) }
+                          })}
+                          className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-lg" 
+                        />
+                        <p className="text-[10px] text-slate-500 italic">* Este valor será aplicado a todos os pedidos, independente do endereço.</p>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {formData.delivery_config?.type === 'neighborhood' && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                      <div className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Taxas por Bairro</h5>
+                          <button 
+                            onClick={() => {
+                              const neighborhoods = [...(formData.delivery_config.neighborhoods || [])];
+                              neighborhoods.push({ name: '', fee: 0 });
+                              setFormData({
+                                ...formData,
+                                delivery_config: { ...formData.delivery_config, neighborhoods }
+                              });
+                            }}
+                            className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase hover:bg-primary/20 transition-all"
+                          >
+                            + Adicionar Bairro
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {(formData.delivery_config.neighborhoods || []).map((nb: any, idx: number) => (
+                            <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <input 
+                                placeholder="Nome do Bairro"
+                                value={nb.name}
+                                onChange={(e) => {
+                                  const neighborhoods = [...formData.delivery_config.neighborhoods];
+                                  neighborhoods[idx].name = e.target.value;
+                                  setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
+                                }}
+                                className="md:col-span-2 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-sm"
+                              />
+                              <div className="flex items-center gap-2">
+                                <input 
+                                  type="number"
+                                  placeholder="Taxa R$"
+                                  value={nb.fee}
+                                  onChange={(e) => {
+                                    const neighborhoods = [...formData.delivery_config.neighborhoods];
+                                    neighborhoods[idx].fee = Number(e.target.value);
+                                    setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
+                                  }}
+                                  className="flex-1 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-sm"
+                                />
+                                <button 
+                                  onClick={() => {
+                                    const neighborhoods = formData.delivery_config.neighborhoods.filter((_: any, i: number) => i !== idx);
+                                    setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
+                                  }}
+                                  className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100"
+                                >
+                                  <Save size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {formData.delivery_config?.type === 'distance' && (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Taxa Base (R$)</label>
+                          <input 
+                            type="number" 
+                            value={formData.delivery_config.baseFee || 0}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              delivery_config: { ...formData.delivery_config, baseFee: Number(e.target.value) }
+                            })}
+                            className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold" 
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Adicional por KM (R$)</label>
+                          <input 
+                            type="number" 
+                            value={formData.delivery_config.feePerKm || 0}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              delivery_config: { ...formData.delivery_config, feePerKm: Number(e.target.value) }
+                            })}
+                            className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold" 
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-500 italic">* Requer integração com Maps API para cálculo automático no checkout.</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>

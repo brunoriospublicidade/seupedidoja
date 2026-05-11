@@ -53,6 +53,7 @@ import WhatsAppTestPage from './pages/WhatsAppTest';
 // Auth Context
 const AuthContext = createContext({
   restaurantId: '',
+  role: 'user',
   login: (id: string) => {},
   logout: () => {},
 });
@@ -80,7 +81,7 @@ const useSidebar = () => useContext(SidebarContext);
 
 const Sidebar = () => {
   const { isOpen, toggle } = useSidebar();
-  const { logout, restaurantId } = useAuth();
+  const { logout, restaurantId, role } = useAuth();
   const [location] = useLocation();
   const utils = trpc.useContext();
   
@@ -138,10 +139,10 @@ const Sidebar = () => {
       title: 'Gestão da Loja',
       items: menuItems.map(i => ({ href: i.path, icon: i.icon, label: i.label }))
     },
-    {
+    ...(role === 'admin' ? [{
       title: 'Administração do Sistema',
       items: adminItems.map(i => ({ href: i.path, icon: i.icon, label: i.label }))
-    }
+    }] : [])
   ];
 
   return (
@@ -276,6 +277,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   const [location, setLocation] = useLocation();
   const [restaurantId, setRestaurantId] = useState<string>(localStorage.getItem('restaurant_id') || '');
+  const [userRole, setUserRole] = useState<'admin' | 'user'>('user');
+
+  const { data: restaurant } = trpc.restaurants.get.useQuery(
+    { id: restaurantId },
+    { enabled: !!restaurantId }
+  );
+
+  useEffect(() => {
+    if (restaurant?.role) {
+      setUserRole(restaurant.role as 'admin' | 'user');
+    }
+  }, [restaurant]);
 
   // Domain-based routing logic
   useEffect(() => {
@@ -295,10 +308,11 @@ const App = () => {
   const logout = () => {
     localStorage.removeItem('restaurant_id');
     setRestaurantId('');
+    setUserRole('user');
   };
 
   return (
-    <AuthContext.Provider value={{ restaurantId, login, logout }}>
+    <AuthContext.Provider value={{ restaurantId, role: userRole, login, logout }}>
       <SidebarProvider>
         <Switch>
           <Route path="/" component={LandingPage} />

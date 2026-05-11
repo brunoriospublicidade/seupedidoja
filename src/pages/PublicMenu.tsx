@@ -12,8 +12,25 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [customer, setCustomer] = useState({ name: '', phone: '', address: '' });
   const [orderComplete, setOrderComplete] = useState(false);
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<any>(null);
+  const [deliveryFee, setDeliveryFee] = useState(0);
 
   const { data: menu, isLoading } = trpc.restaurants.getPublicMenu.useQuery({ slug });
+
+  useEffect(() => {
+    if (menu?.restaurant?.deliveryConfig) {
+      const config = menu.restaurant.deliveryConfig as any;
+      if (config.type === 'fixed') {
+        setDeliveryFee(Number(config.fixedFee) || 0);
+      } else if (config.type === 'neighborhood' && selectedNeighborhood) {
+        setDeliveryFee(Number(selectedNeighborhood.fee) || 0);
+      } else if (config.type === 'distance') {
+        setDeliveryFee(Number(config.baseFee) || 0);
+      } else {
+        setDeliveryFee(0);
+      }
+    }
+  }, [menu, selectedNeighborhood]);
 
   const filteredProducts = useMemo(() => {
     if (!menu) return [];
@@ -34,7 +51,8 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   }, [menu, filteredProducts]);
 
   const totalItems = cart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-  const totalPrice = cart.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0)), 0);
+  const itemsPrice = cart.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0)), 0);
+  const totalPrice = itemsPrice + deliveryFee;
 
   const addToCart = (product: any, quantity: number = 1) => {
     setCart(prev => {
@@ -62,11 +80,20 @@ const PublicMenu = ({ slug }: { slug: string }) => {
     if (!customer.name || !customer.phone) {
       return toast.error('Nome e Telefone são obrigatórios');
     }
+    
+    const deliveryConfig = menu?.restaurant?.deliveryConfig as any;
+    if (deliveryConfig?.type === 'neighborhood' && !selectedNeighborhood) {
+      return toast.error('Por favor, selecione seu bairro para o cálculo do frete.');
+    }
+
     createOrder.mutate({
       restaurantId: menu!.restaurant.id,
       items: cart,
       total: totalPrice,
-      customer
+      customer: {
+        ...customer,
+        neighborhood: selectedNeighborhood?.name || ''
+      }
     });
   };
 
@@ -77,6 +104,8 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   );
 
   if (!menu) return <div className="p-20 text-center">Restaurante não encontrado.</div>;
+
+  const deliveryConfig = menu.restaurant.deliveryConfig as any;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-32">
@@ -101,7 +130,10 @@ const PublicMenu = ({ slug }: { slug: string }) => {
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm text-slate-500 font-medium">
               <span className="flex items-center gap-1 text-amber-500"><Star size={16} fill="currentColor" /> 4.8</span>
               <span className="flex items-center gap-1"><Clock size={16} /> 30-45 min</span>
-              <span className="flex items-center gap-1"><DollarSign size={16} /> Entrega Grátis</span>
+              <span className="flex items-center gap-1">
+                <DollarSign size={16} /> 
+                {deliveryFee === 0 ? 'Entrega Grátis' : `Entrega: R$ ${deliveryFee.toFixed(2).replace('.', ',')}`}
+              </span>
             </div>
           </div>
         </div>
@@ -197,20 +229,9 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                   <p className="text-slate-500 mt-2">{activeProduct.description}</p>
                   <div className="text-xl font-bold text-primary mt-4">R$ {(Number(activeProduct.price) || 0).toFixed(2).replace('.', ',')}</div>
                 </div>
-
-                {/* Optionals placeholder */}
-                <div className="space-y-4">
-                  <h4 className="font-bold flex items-center gap-2">Personalize seu pedido</h4>
-                  <p className="text-sm text-slate-400 italic">Opcionais configurados aparecerão aqui em breve...</p>
-                </div>
               </div>
 
               <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex items-center gap-4">
-                <div className="flex items-center gap-4 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-                  <button className="p-2 text-primary hover:bg-slate-50 rounded-lg"><Minus size={20} /></button>
-                  <span className="font-bold w-4 text-center">1</span>
-                  <button className="p-2 text-primary hover:bg-slate-50 rounded-lg"><Plus size={20} /></button>
-                </div>
                 <button 
                   onClick={() => addToCart(activeProduct)}
                   className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-3 active:scale-95 transition-all"
@@ -276,7 +297,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                     </div>
                     <div className="space-y-2">
                       <h4 className="text-2xl font-black text-slate-800">Pedido Enviado!</h4>
-                      <p className="text-slate-500 font-medium">Seu pedido foi recebido pelo restaurante e você receberá uma confirmação em breve.</p>
+                      <p className="text-slate-500 font-medium">Seu pedido foi recebido pelo restaurante.</p>
                     </div>
                     <button 
                       onClick={() => { setIsCheckoutOpen(false); setOrderComplete(false); }}
@@ -316,22 +337,61 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                          <MapPin size={12} className="text-primary" /> Endereço de Entrega
+                          <MapPin size={12} className="text-primary" /> Bairro de Entrega
+                        </label>
+                        {deliveryConfig?.type === 'neighborhood' ? (
+                          <select 
+                            value={selectedNeighborhood?.name || ''}
+                            onChange={(e) => {
+                              const nb = (deliveryConfig.neighborhoods || []).find((n: any) => n.name === e.target.value);
+                              setSelectedNeighborhood(nb);
+                            }}
+                            className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                          >
+                            <option value="">Selecione seu bairro...</option>
+                            {(deliveryConfig.neighborhoods || []).map((nb: any, i: number) => (
+                              <option key={i} value={nb.name}>{nb.name} (R$ {Number(nb.fee).toFixed(2)})</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input 
+                            type="text"
+                            placeholder="Seu bairro"
+                            className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                            disabled
+                            value={menu.restaurant.neighborhood || ''}
+                          />
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                          <MapPin size={12} className="text-primary" /> Endereço Completo
                         </label>
                         <textarea 
                           rows={3}
                           value={customer.address}
                           onChange={(e) => setCustomer({...customer, address: e.target.value})}
-                          placeholder="Rua, número, bairro e complemento..."
+                          placeholder="Rua, número e complemento..."
                           className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold resize-none"
                         />
                       </div>
                     </div>
 
                     <div className="pt-6 border-t border-slate-100 space-y-4">
-                      <div className="flex justify-between items-center text-slate-400 font-bold text-sm">
-                        <span>Resumo do Pedido ({totalItems} itens)</span>
-                        <span>R$ {(Number(totalPrice) || 0).toFixed(2).replace('.', ',')}</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center text-slate-400 font-bold text-xs">
+                          <span>Subtotal ({totalItems} itens)</span>
+                          <span>R$ {(Number(itemsPrice) || 0).toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-400 font-bold text-xs">
+                          <span>Taxa de Entrega</span>
+                          <span>{deliveryFee === 0 ? 'Grátis' : `R$ ${deliveryFee.toFixed(2).replace('.', ',')}`}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-slate-800 font-black text-lg pt-2">
+                          <span>Total</span>
+                          <span className="text-primary">R$ {(Number(totalPrice) || 0).toFixed(2).replace('.', ',')}</span>
+                        </div>
                       </div>
                       <button 
                         onClick={handleFinishOrder}
