@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { db } from '../db';
-import { orders, customers, restaurants, settings } from '../db/schema';
+import { orders, customers, restaurants, settings, coupons } from '../db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export const ordersRouter = router({
@@ -87,6 +87,8 @@ export const ordersRouter = router({
         customerId: customerId,
         items: input.items,
         total: input.total.toString(),
+        address: input.customer.address,
+        neighborhood: input.customer.neighborhood,
         status: 'pending'
       }).returning();
 
@@ -153,7 +155,7 @@ export const ordersRouter = router({
         const [orderData] = await db.select({
           customerPhone: customers.phone,
           customerName: customers.name,
-          customerAddress: customers.address,
+          customerAddress: orders.address,
           restaurantName: restaurants.name
         }).from(orders)
           .innerJoin(customers, eq(orders.customerId, customers.id))

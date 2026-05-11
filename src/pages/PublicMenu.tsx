@@ -83,7 +83,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       if (appliedCoupon.type === 'percentage') {
         setCouponDiscount(itemsPrice * (Number(appliedCoupon.value) / 100));
       } else {
-        setCouponDiscount(Math.min(itemsPrice, Number(appliedCoupon.value)));
+        setCouponDiscount(Math.min(itemsPrice, Number(appliedCoupon.value) || 0));
       }
     } else {
       setCouponDiscount(0);
@@ -184,10 +184,10 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const validateCoupon = trpc.coupons.validate.useMutation({
     onSuccess: (res) => {
-      if (res.valid) {
+      if (res.valid && 'coupon' in res) {
         setAppliedCoupon(res.coupon);
         toast.success('Cupom aplicado com sucesso!');
-      } else {
+      } else if ('message' in res) {
         toast.error(res.message);
       }
     }
