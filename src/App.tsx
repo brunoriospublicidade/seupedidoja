@@ -45,6 +45,7 @@ import AdminUsersPage from './pages/AdminUsers';
 import AdminPaymentsPage from './pages/AdminPayments';
 import AdminReportsPage from './pages/AdminReports';
 import AdminSettingsPage from './pages/AdminSettings';
+import OrdersPage from './pages/Orders';
 
 // Auth Context
 const AuthContext = createContext({
@@ -109,6 +110,7 @@ const Sidebar = () => {
   };
 
   const menuItems = [
+    { id: 'orders', label: 'Pedidos', icon: ShoppingBag, path: '/admin/pedidos' },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { id: 'products', label: 'Produtos', icon: UtensilsCrossed, path: '/admin/produtos' },
     { id: 'categories', label: 'Categorias', icon: ListTree, path: '/admin/categorias' },
@@ -345,6 +347,9 @@ const App = () => {
           </Route>
           <Route path="/admin/configuracoes">
             <Layout><SettingsPage /></Layout>
+          </Route>
+          <Route path="/admin/pedidos">
+            <Layout><OrdersPage /></Layout>
           </Route>
           <Route path="/admin">
             <Layout><DashboardPage /></Layout>

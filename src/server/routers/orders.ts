@@ -18,7 +18,7 @@ export const ordersRouter = router({
 
       return resOrders.map(order => ({
         ...order,
-        customers: resCustomers.find(c => c.id === order.customerId) || null
+        customer: resCustomers.find(c => c.id === order.customerId) || null
       }));
     }),
 
@@ -37,6 +37,7 @@ export const ordersRouter = router({
         data
       };
     }),
+
   create: publicProcedure
     .input(z.object({
       restaurantId: z.string(),
@@ -81,23 +82,41 @@ export const ordersRouter = router({
             `*Itens:* \n${input.items.map((i: any) => `- ${i.quantity}x ${i.name} (R$ ${i.price})`).join('\n')}\n\n` +
             `*Total:* R$ ${input.total.toFixed(2)}`;
 
-          await fetch(`${restaurant.evolutionApiUrl}/message/sendText/${restaurant.evolutionInstance}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': restaurant.evolutionApiKey
-            },
-            body: JSON.stringify({
-              number: restaurant.whatsapp?.replace(/\D/g, ''),
-              text: messageText,
-              delay: 1200
-            })
-          });
+          const recipientRaw = restaurant.whatsapp?.replace(/\D/g, '') || '';
+          const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
+
+          if (recipient) {
+            await fetch(`${restaurant.evolutionApiUrl}/message/sendText/${restaurant.evolutionInstance}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': restaurant.evolutionApiKey
+              },
+              body: JSON.stringify({
+                number: recipient,
+                text: messageText,
+                delay: 1200
+              })
+            });
+          }
         } catch (error) {
           console.error('[EVOLUTION API ERROR]', error);
         }
       }
 
+      return order;
+    }),
+
+  updateStatus: publicProcedure
+    .input(z.object({
+      orderId: z.string(),
+      status: z.enum(['pending', 'preparing', 'shipped', 'delivered', 'cancelled'])
+    }))
+    .mutation(async ({ input }) => {
+      const [order] = await db.update(orders)
+        .set({ status: input.status })
+        .where(eq(orders.id, input.orderId))
+        .returning();
       return order;
     }),
 });
