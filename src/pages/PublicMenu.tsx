@@ -113,7 +113,8 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const isProductValid = useMemo(() => {
     if (!activeProduct) return false;
-    const groups = (menu?.optionalGroups || []).filter((g: any) => activeProduct.optionals?.includes(g.id)) || [];
+    const productOptionals = Array.isArray(activeProduct?.optionals) ? activeProduct.optionals : [];
+    const groups = (menu?.optionalGroups || []).filter((g: any) => productOptionals.includes(g.id)) || [];
     return groups.every(isOptionalGroupValid);
   }, [activeProduct, selectedOptionals, menu]);
 
@@ -297,7 +298,12 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
                 {/* Optional Groups */}
                 {(menu?.optionalGroups || [])
-                  .filter(group => activeProduct.optionals?.includes(group.id))
+                  .filter(group => {
+                    const productOptionals = Array.isArray(activeProduct?.optionals) 
+                      ? activeProduct.optionals 
+                      : [];
+                    return productOptionals.includes(group.id);
+                  })
                   .map(group => (
                     <div key={group.id} className="space-y-4">
                       <div className="flex justify-between items-end">
