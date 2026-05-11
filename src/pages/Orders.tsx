@@ -265,7 +265,17 @@ const OrdersPage = () => {
                       <div key={idx} className="p-5 border-b border-slate-50 dark:border-white/5 last:border-0 flex justify-between items-center">
                         <div>
                           <p className="font-bold text-slate-800 dark:text-white"><span className="text-primary">{item.quantity}x</span> {item.name}</p>
-                          {item.observation && <p className="text-xs text-slate-400 italic">Obs: {item.observation}</p>}
+                          {item.choices && item.choices.length > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                              {item.choices.map((choice: any, cIdx: number) => (
+                                <p key={cIdx} className="text-[10px] text-slate-500 flex items-center gap-1.5">
+                                  <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                  {choice.itemName}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                          {item.observation && <p className="text-xs text-slate-400 italic mt-1">Obs: {item.observation}</p>}
                         </div>
                         <p className="font-black text-slate-800 dark:text-white">R$ {(item.price * item.quantity).toFixed(2)}</p>
                       </div>

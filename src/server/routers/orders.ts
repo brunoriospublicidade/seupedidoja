@@ -153,7 +153,13 @@ export const ordersRouter = router({
 
         if (input.status === 'received') {
           statusMsg = '✅ *Seu pedido foi recebido com sucesso!*';
-          const itemsList = (order.items as any[]).map(i => `• ${i.quantity}x ${i.name} - R$ ${(i.price * i.quantity).toFixed(2)}`).join('\n');
+          const itemsList = (order.items as any[]).map(i => {
+            const base = `• ${i.quantity}x ${i.name} - R$ ${(i.price * i.quantity).toFixed(2)}`;
+            const choices = i.choices && i.choices.length > 0 
+              ? i.choices.map((c: any) => `  └ ${c.itemName}`).join('\n')
+              : '';
+            return choices ? `${base}\n${choices}` : base;
+          }).join('\n');
           detailedSummary = `\n\n*RESUMO DO PEDIDO:*\n${itemsList}\n\n*Total:* R$ ${Number(order.total).toFixed(2)}\n*Endereço:* ${orderData.customerAddress || 'Retirada no Local'}\n\n🕒 Seu pedido começará a ser preparado em instantes.`;
         }
         

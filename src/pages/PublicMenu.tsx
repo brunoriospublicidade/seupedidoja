@@ -54,16 +54,81 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const itemsPrice = cart.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0)), 0);
   const totalPrice = itemsPrice + deliveryFee;
 
+  const [selectedOptionals, setSelectedOptionals] = useState<Record<string, string[]>>({});
+
   const addToCart = (product: any, quantity: number = 1) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item);
+    // Calcular preço total do item (base + opcionais)
+    let extraPrice = 0;
+    const choices: any[] = [];
+
+    Object.entries(selectedOptionals).forEach(([groupId, itemIds]) => {
+      const group = (menu?.optionalGroups || []).find((g: any) => g.id === groupId);
+      if (group) {
+        itemIds.forEach(itemId => {
+          const item = (group.optional_items || []).find((i: any) => i.id === itemId);
+          if (item) {
+            extraPrice += Number(item.price) || 0;
+            choices.push({ groupName: group.name, itemName: item.name, price: item.price });
+          }
+        });
       }
-      return [...prev, { ...product, quantity }];
     });
+
+    const finalPrice = Number(product.price) + extraPrice;
+    const cartItemId = `${product.id}-${JSON.stringify(selectedOptionals)}`;
+
+    setCart(prev => {
+      const existing = prev.find(item => item.cartItemId === cartItemId);
+      if (existing) {
+        return prev.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + quantity } : item);
+      }
+      return [...prev, { ...product, price: finalPrice, quantity, choices, cartItemId }];
+    });
+    
     setActiveProduct(null);
+    setSelectedOptionals({});
   };
+
+  const toggleOptional = (groupId: string, itemId: string, maxSelection: number) => {
+    setSelectedOptionals(prev => {
+      const current = prev[groupId] || [];
+      if (current.includes(itemId)) {
+        return { ...prev, [groupId]: current.filter(id => id !== itemId) };
+      }
+      if (maxSelection === 1) {
+        return { ...prev, [groupId]: [itemId] };
+      }
+      if (current.length < maxSelection) {
+        return { ...prev, [groupId]: [...current, itemId] };
+      }
+      return prev;
+    });
+  };
+
+  const isOptionalGroupValid = (group: any) => {
+    const selected = selectedOptionals[group.id] || [];
+    if (group.isMandatory && selected.length === 0) return false;
+    return true;
+  };
+
+  const isProductValid = useMemo(() => {
+    if (!activeProduct) return false;
+    const groups = (menu?.optionalGroups || []).filter((g: any) => activeProduct.optionals?.includes(g.id)) || [];
+    return groups.every(isOptionalGroupValid);
+  }, [activeProduct, selectedOptionals, menu]);
+
+  const currentModalPrice = useMemo(() => {
+    if (!activeProduct) return 0;
+    let total = Number(activeProduct.price) || 0;
+    Object.entries(selectedOptionals).forEach(([groupId, itemIds]) => {
+      const group = (menu?.optionalGroups || []).find((g: any) => g.id === groupId);
+      itemIds.forEach(itemId => {
+        const item = (group?.optional_items || []).find((i: any) => i.id === itemId);
+        if (item) total += Number(item.price) || 0;
+      });
+    });
+    return total;
+  }, [activeProduct, selectedOptionals, menu]);
 
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: () => {
@@ -223,22 +288,76 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                 </button>
               </div>
 
-              <div className="p-8 flex-1 overflow-y-auto space-y-6">
+              <div className="p-8 flex-1 overflow-y-auto space-y-8 no-scrollbar">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">{activeProduct.name}</h2>
                   <p className="text-slate-500 mt-2">{activeProduct.description}</p>
                   <div className="text-xl font-bold text-primary mt-4">R$ {(Number(activeProduct.price) || 0).toFixed(2).replace('.', ',')}</div>
                 </div>
+
+                {/* Optional Groups */}
+                {(menu?.optionalGroups || [])
+                  .filter(group => activeProduct.optionals?.includes(group.id))
+                  .map(group => (
+                    <div key={group.id} className="space-y-4">
+                      <div className="flex justify-between items-end">
+                        <div>
+                          <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                            {group.name}
+                            {group.isMandatory && (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-black uppercase rounded">Obrigatório</span>
+                            )}
+                          </h4>
+                          <p className="text-xs text-slate-400">Escolha até {group.maxSelection} {group.maxSelection === 1 ? 'opção' : 'opções'}.</p>
+                        </div>
+                        <div className="text-[10px] font-black text-slate-300 uppercase">
+                          {(selectedOptionals[group.id] || []).length} / {group.maxSelection}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {group.optional_items.map((item: any) => {
+                          const isSelected = (selectedOptionals[group.id] || []).includes(item.id);
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => toggleOptional(group.id, item.id, group.maxSelection)}
+                              className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                                isSelected 
+                                ? 'border-primary bg-primary/5 text-primary' 
+                                : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                  isSelected ? 'border-primary bg-primary' : 'border-slate-200'
+                                }`}>
+                                  {isSelected && <CheckCircle2 size={12} className="text-white" />}
+                                </div>
+                                <span className="text-sm font-bold">{item.name}</span>
+                              </div>
+                              {Number(item.price) > 0 && (
+                                <span className="text-xs font-black">+ R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
               </div>
 
               <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex items-center gap-4">
                 <button 
                   onClick={() => addToCart(activeProduct)}
-                  className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-3 active:scale-95 transition-all"
+                  disabled={!isProductValid}
+                  className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale disabled:scale-100"
                 >
-                  Adicionar
-                  <span className="opacity-60">•</span>
-                  R$ {(Number(activeProduct.price) || 0).toFixed(2).replace('.', ',')}
+                  {isProductValid ? (
+                    <>Adicionar <span className="opacity-60">•</span> R$ {currentModalPrice.toFixed(2).replace('.', ',')}</>
+                  ) : (
+                    'Selecione os itens obrigatórios'
+                  )}
                 </button>
               </div>
             </motion.div>
@@ -289,7 +408,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                 <button onClick={() => setIsCheckoutOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={24} /></button>
               </div>
 
-              <div className="p-8 flex-1 overflow-y-auto space-y-8">
+              <div className="p-8 flex-1 overflow-y-auto space-y-8 no-scrollbar">
                 {orderComplete ? (
                   <div className="py-12 text-center space-y-6">
                     <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
@@ -308,7 +427,36 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-6">
+                    {/* Item List */}
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Seu Carrinho</h4>
+                      <div className="space-y-3">
+                        {cart.map((item, idx) => (
+                          <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div className="font-bold text-slate-800">
+                                {item.quantity}x {item.name}
+                              </div>
+                              <div className="font-bold text-slate-800 text-sm">
+                                R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                              </div>
+                            </div>
+                            {item.choices && item.choices.length > 0 && (
+                              <div className="space-y-1">
+                                {item.choices.map((choice: any, cIdx: number) => (
+                                  <div key={cIdx} className="text-xs text-slate-500 flex items-center gap-2">
+                                    <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                    {choice.itemName} {Number(choice.price) > 0 && `(+ R$ ${Number(choice.price).toFixed(2)})`}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6 pt-4 border-t border-slate-100">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                           <User size={12} className="text-primary" /> Seu Nome
