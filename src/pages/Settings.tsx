@@ -87,7 +87,7 @@ const SettingsPage = () => {
   }, []);
 
   useEffect(() => {
-    if (restaurant) {
+    if (restaurant && !formData) {
       let openingHours = restaurant.openingHours;
       if (typeof openingHours === 'string') {
         try { openingHours = JSON.parse(openingHours); } catch { openingHours = {}; }
@@ -129,7 +129,7 @@ const SettingsPage = () => {
         state: restaurant.state || ''
       });
     }
-  }, [restaurant]);
+  }, [restaurant, formData]);
 
   const applyPhoneMask = (value: string) => {
     const digits = value.replace(/\D/g, '');
