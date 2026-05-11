@@ -128,29 +128,30 @@ export const ordersRouter = router({
 
           if (customerData && restaurant?.evolutionApiUrl && restaurant?.evolutionApiKey && restaurant?.evolutionInstance) {
             let statusMsg = '';
-          if (input.status === 'preparing') statusMsg = '👨‍🍳 Seu pedido está sendo preparado agora!';
-          if (input.status === 'shipped') statusMsg = '🛵 Ótimas notícias! Seu pedido saiu para entrega!';
-          if (input.status === 'delivered') statusMsg = '✅ Seu pedido foi entregue. Bom apetite! 🍔';
-          if (input.status === 'cancelled') statusMsg = '❌ Sinto muito, seu pedido foi cancelado pelo restaurante.';
+            if (input.status === 'preparing') statusMsg = '👨‍🍳 Seu pedido está sendo preparado agora!';
+            if (input.status === 'shipped') statusMsg = '🛵 Ótimas notícias! Seu pedido saiu para entrega!';
+            if (input.status === 'delivered') statusMsg = '✅ Seu pedido foi entregue. Bom apetite! 🍔';
+            if (input.status === 'cancelled') statusMsg = '❌ Sinto muito, seu pedido foi cancelado pelo restaurante.';
 
-          if (statusMsg) {
-            const messageText = `Olá, *${customerData.name}*!\n\n${statusMsg}\n\n*Pedido:* #${order.id.slice(-4).toUpperCase()}\n*Restaurante:* ${restaurant.name}`;
+            if (statusMsg) {
+              const messageText = `Olá, *${customerData.name}*!\n\n${statusMsg}\n\n*Pedido:* #${order.id.slice(-4).toUpperCase()}\n*Restaurante:* ${restaurant.name}`;
 
-            const recipientRaw = customerData.phone.replace(/\D/g, '');
-            const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
+              const recipientRaw = customerData.phone.replace(/\D/g, '');
+              const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
 
-            await fetch(`${restaurant.evolutionApiUrl}/message/sendText/${restaurant.evolutionInstance}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': restaurant.evolutionApiKey
-              },
-              body: JSON.stringify({
-                number: recipient,
-                text: messageText,
-                delay: 1200
-              })
-            });
+              await fetch(`${restaurant.evolutionApiUrl}/message/sendText/${restaurant.evolutionInstance}`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': restaurant.evolutionApiKey
+                },
+                body: JSON.stringify({
+                  number: recipient,
+                  text: messageText,
+                  delay: 1200
+                })
+              });
+            }
           }
         }
       } catch (error) {
