@@ -97,7 +97,10 @@ const SettingsPage = () => {
         subscription_plan: restaurant.subscriptionPlan || 'pedidos',
         banner_url: restaurant.bannerUrl || '',
         logo_url: restaurant.logoUrl || '',
-        opening_hours: initializedHours
+        opening_hours: initializedHours,
+        evolution_api_url: restaurant.evolutionApiUrl || '',
+        evolution_api_key: restaurant.evolutionApiKey || '',
+        evolution_instance: restaurant.evolutionInstance || ''
       });
     }
   }, [restaurant]);
@@ -131,7 +134,10 @@ const SettingsPage = () => {
       subscription_plan: formData.subscription_plan,
       logo_url: formData.logo_url,
       banner_url: formData.banner_url,
-      slug: formData.slug
+      slug: formData.slug,
+      evolution_api_url: formData.evolution_api_url,
+      evolution_api_key: formData.evolution_api_key,
+      evolution_instance: formData.evolution_instance
     });
   };
 
@@ -295,6 +301,46 @@ const SettingsPage = () => {
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageCircle size={12} className="text-primary" /> WhatsApp para Pedidos</label>
                   <input type="text" value={formData.whatsapp} onChange={(e) => handlePhoneChange(e, 'whatsapp')} className="w-full p-4 rounded-2xl border border-primary/20 bg-primary/5 outline-none font-black text-primary" />
                 </div>
+              </div>
+
+              {/* Evolution API Integration */}
+              <div className="pt-8 border-t border-slate-50 dark:border-slate-800 space-y-6">
+                <div className="flex items-center gap-2">
+                  <Zap size={16} className="text-primary" />
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Integração Evolution API (WhatsApp Automático)</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-2 md:col-span-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">URL da API (ex: https://api.sua-evolution.com)</label>
+                      <input 
+                        type="text" 
+                        value={formData.evolution_api_url} 
+                        onChange={(e) => setFormData({...formData, evolution_api_url: e.target.value})} 
+                        placeholder="https://api..."
+                        className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none text-xs font-medium" 
+                      />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Global API Key</label>
+                      <input 
+                        type="password" 
+                        value={formData.evolution_api_key} 
+                        onChange={(e) => setFormData({...formData, evolution_api_key: e.target.value})} 
+                        className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none text-xs font-medium" 
+                      />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nome da Instância</label>
+                      <input 
+                        type="text" 
+                        value={formData.evolution_instance} 
+                        onChange={(e) => setFormData({...formData, evolution_instance: e.target.value})} 
+                        placeholder="Ex: Restaurante_01"
+                        className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none text-xs font-bold" 
+                      />
+                   </div>
+                </div>
+                <p className="text-[10px] text-slate-400 italic">Esses dados permitem que o sistema envie notificações automáticas sem precisar abrir o link do WhatsApp.</p>
               </div>
             </div>
           </div>

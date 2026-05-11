@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X } from 'lucide-react';
+import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trpc } from '../lib/trpc';
 
@@ -8,6 +9,9 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeProduct, setActiveProduct] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [customer, setCustomer] = useState({ name: '', phone: '', address: '' });
+  const [orderComplete, setOrderComplete] = useState(false);
 
   const { data: menu, isLoading } = trpc.restaurants.getPublicMenu.useQuery({ slug });
 
@@ -41,6 +45,29 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       return [...prev, { ...product, quantity }];
     });
     setActiveProduct(null);
+  };
+
+  const createOrder = trpc.orders.create.useMutation({
+    onSuccess: () => {
+      setOrderComplete(true);
+      setCart([]);
+      toast.success('Pedido enviado com sucesso!');
+    },
+    onError: (err) => {
+      toast.error('Erro ao enviar pedido: ' + err.message);
+    }
+  });
+
+  const handleFinishOrder = () => {
+    if (!customer.name || !customer.phone) {
+      return toast.error('Nome e Telefone são obrigatórios');
+    }
+    createOrder.mutate({
+      restaurantId: menu!.restaurant.id,
+      items: cart,
+      total: totalPrice,
+      customer
+    });
   };
 
   if (isLoading) return (
@@ -207,7 +234,10 @@ const PublicMenu = ({ slug }: { slug: string }) => {
             exit={{ y: 100, opacity: 0 }}
             className="fixed bottom-6 inset-x-0 px-4 z-40 max-w-lg mx-auto"
           >
-            <button className="w-full bg-primary p-4 rounded-[28px] shadow-2xl flex items-center justify-between text-white active:scale-95 transition-transform">
+            <button 
+              onClick={() => setIsCheckoutOpen(true)}
+              className="w-full bg-primary p-4 rounded-[28px] shadow-2xl flex items-center justify-between text-white active:scale-95 transition-transform"
+            >
               <div className="flex items-center gap-4">
                 <div className="bg-white/20 w-10 h-10 rounded-xl flex items-center justify-center font-bold">
                   {totalItems}
@@ -220,6 +250,102 @@ const PublicMenu = ({ slug }: { slug: string }) => {
               <ShoppingBag size={24} />
             </button>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Checkout Modal */}
+      <AnimatePresence>
+        {isCheckoutOpen && (
+          <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-white w-full max-w-lg rounded-t-[40px] md:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh] shadow-2xl"
+            >
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="text-xl font-black text-slate-800">Finalizar Pedido</h3>
+                <button onClick={() => setIsCheckoutOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X size={24} /></button>
+              </div>
+
+              <div className="p-8 flex-1 overflow-y-auto space-y-8">
+                {orderComplete ? (
+                  <div className="py-12 text-center space-y-6">
+                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce">
+                      <CheckCircle2 size={48} />
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-2xl font-black text-slate-800">Pedido Enviado!</h4>
+                      <p className="text-slate-500 font-medium">Seu pedido foi recebido pelo restaurante e você receberá uma confirmação em breve.</p>
+                    </div>
+                    <button 
+                      onClick={() => { setIsCheckoutOpen(false); setOrderComplete(false); }}
+                      className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20"
+                    >
+                      Voltar ao Cardápio
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                          <User size={12} className="text-primary" /> Seu Nome
+                        </label>
+                        <input 
+                          type="text" 
+                          value={customer.name}
+                          onChange={(e) => setCustomer({...customer, name: e.target.value})}
+                          placeholder="Como quer ser chamado?"
+                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                          <Phone size={12} className="text-primary" /> Seu WhatsApp
+                        </label>
+                        <input 
+                          type="tel" 
+                          value={customer.phone}
+                          onChange={(e) => setCustomer({...customer, phone: e.target.value})}
+                          placeholder="(00) 00000-0000"
+                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                          <MapPin size={12} className="text-primary" /> Endereço de Entrega
+                        </label>
+                        <textarea 
+                          rows={3}
+                          value={customer.address}
+                          onChange={(e) => setCustomer({...customer, address: e.target.value})}
+                          placeholder="Rua, número, bairro e complemento..."
+                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-slate-100 space-y-4">
+                      <div className="flex justify-between items-center text-slate-400 font-bold text-sm">
+                        <span>Resumo do Pedido ({totalItems} itens)</span>
+                        <span>R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+                      </div>
+                      <button 
+                        onClick={handleFinishOrder}
+                        disabled={createOrder.isLoading}
+                        className="w-full py-5 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {createOrder.isLoading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={20} /> Enviar Pedido</>}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

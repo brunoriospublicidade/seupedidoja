@@ -117,6 +117,9 @@ export const restaurantsRouter = router({
       opening_hours: z.any().optional(),
       subscription_plan: z.string().optional(),
       theme_preference: z.enum(['light', 'dark']).optional(),
+      evolution_api_url: z.string().optional(),
+      evolution_api_key: z.string().optional(),
+      evolution_instance: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
@@ -141,6 +144,9 @@ export const restaurantsRouter = router({
       if (input.opening_hours) mappedData.openingHours = input.opening_hours;
       if (input.subscription_plan) mappedData.subscriptionPlan = input.subscription_plan;
       if (input.theme_preference) mappedData.themePreference = input.theme_preference;
+      if (input.evolution_api_url !== undefined) mappedData.evolutionApiUrl = input.evolution_api_url;
+      if (input.evolution_api_key !== undefined) mappedData.evolutionApiKey = input.evolution_api_key;
+      if (input.evolution_instance !== undefined) mappedData.evolutionInstance = input.evolution_instance;
 
       const [data] = await db.update(restaurants)
         .set(mappedData)

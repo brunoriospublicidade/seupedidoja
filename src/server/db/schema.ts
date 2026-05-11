@@ -21,6 +21,9 @@ export const restaurants = pgTable('restaurants', {
   messageCredits: integer('message_credits').default(30),
   messagesSentThisMonth: integer('messages_sent_this_month').default(0),
   ownerId: uuid('owner_id'),
+  evolutionApiUrl: text('evolution_api_url'),
+  evolutionApiKey: text('evolution_api_key'),
+  evolutionInstance: text('evolution_instance'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
