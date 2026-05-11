@@ -248,14 +248,15 @@ const LandingPage = () => {
             <p className="text-lg text-slate-500 font-medium">
                O Seu Pedido Já foi criado para quem quer vender mais sem depender de aplicativos caros.
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-5">
               {[
                 '🍔 Hamburguerias', '🍕 Pizzarias', '🍣 Sushi', '🌭 Lanches',
                 '🍗 Marmitas', '☕ Cafeterias', '🥤 Açaí', '🍰 Docerias',
                 '🍛 Restaurantes', '🚚 Delivery local'
               ].map((cat) => (
-                <div key={cat} className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl font-black text-slate-700 text-sm hover:bg-primary/5 transition-colors">
-                   {cat}
+                <div key={cat} className="flex items-center gap-3 p-5 bg-white border border-slate-100 rounded-[24px] font-black text-slate-800 text-base shadow-sm hover:shadow-xl hover:border-primary/20 hover:scale-105 transition-all cursor-default group">
+                   <span className="group-hover:scale-125 transition-transform duration-300">{cat.split(' ')[0]}</span>
+                   <span>{cat.split(' ').slice(1).join(' ')}</span>
                 </div>
               ))}
             </div>
