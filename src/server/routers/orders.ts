@@ -82,15 +82,16 @@ export const ordersRouter = router({
             `*Itens:* \n${input.items.map((i: any) => `- ${i.quantity}x ${i.name} (R$ ${i.price})`).join('\n')}\n\n` +
             `*Total:* R$ ${input.total.toFixed(2)}`;
 
+          const apiUrl = restaurant.evolutionApiUrl.trim().replace(/\/+$/, '');
           const recipientRaw = restaurant.whatsapp?.replace(/\D/g, '') || '';
           const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
 
           if (recipient) {
-            await fetch(`${restaurant.evolutionApiUrl}/message/sendText/${restaurant.evolutionInstance}`, {
+            await fetch(`${apiUrl}/message/sendText/${restaurant.evolutionInstance.trim()}`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'apikey': restaurant.evolutionApiKey
+                'apikey': restaurant.evolutionApiKey.trim()
               },
               body: JSON.stringify({
                 number: recipient,
@@ -127,6 +128,10 @@ export const ordersRouter = router({
           const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, order.restaurantId));
 
           if (customerData && restaurant?.evolutionApiUrl && restaurant?.evolutionApiKey && restaurant?.evolutionInstance) {
+            const apiUrl = restaurant.evolutionApiUrl.trim().replace(/\/+$/, '');
+            const apiKey = restaurant.evolutionApiKey.trim();
+            const instance = restaurant.evolutionInstance.trim();
+
             let statusMsg = '';
             if (input.status === 'preparing') statusMsg = '👨‍🍳 Seu pedido está sendo preparado agora!';
             if (input.status === 'shipped') statusMsg = '🛵 Ótimas notícias! Seu pedido saiu para entrega!';
@@ -139,11 +144,13 @@ export const ordersRouter = router({
               const recipientRaw = customerData.phone.replace(/\D/g, '');
               const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
 
-              await fetch(`${restaurant.evolutionApiUrl}/message/sendText/${restaurant.evolutionInstance}`, {
+              console.log('[WHATSAPP] Enviando para:', recipient, 'via', apiUrl, 'instancia:', instance);
+
+              const response = await fetch(`${apiUrl}/message/sendText/${instance}`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'apikey': restaurant.evolutionApiKey
+                  'apikey': apiKey
                 },
                 body: JSON.stringify({
                   number: recipient,
@@ -151,6 +158,11 @@ export const ordersRouter = router({
                   delay: 1200
                 })
               });
+              
+              if (!response.ok) {
+                const errBody = await response.text();
+                console.error('[WHATSAPP ERROR RESPONSE]', errBody);
+              }
             }
           }
         }
