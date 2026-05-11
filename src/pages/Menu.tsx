@@ -109,7 +109,7 @@ const MenuPage = () => {
     setNewProduct({
       name: product.name,
       description: product.description || '',
-      price: product.price.toFixed(2).replace('.', ','),
+      price: (Number(product.price) || 0).toFixed(2).replace('.', ','),
       category_id: product.categoryId,
       subcategory_id: product.subcategoryId || '',
       image_url: product.imageUrl || '',
@@ -539,7 +539,7 @@ const MenuPage = () => {
                           <div className="flex justify-between items-start gap-4">
                             <h4 className="font-bold text-xl text-slate-800 dark:text-white leading-tight group-hover:text-primary transition-colors">{product.name}</h4>
                             <div className="bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
-                              <span className="text-primary font-black text-lg">R$ {product.price?.toFixed(2).replace('.', ',')}</span>
+                              <span className="text-primary font-black text-lg">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</span>
                             </div>
                           </div>
                           

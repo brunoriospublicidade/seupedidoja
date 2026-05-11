@@ -169,7 +169,7 @@ const MarketingPage = () => {
                       <div className="text-3xl font-black text-slate-800 dark:text-white mb-2">{pkg.credits}</div>
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Mensagens</div>
                       <div className="text-xl font-bold text-emerald-500 mb-6">
-                        R$ {pkg.price.toFixed(2).replace('.', ',')}
+                        R$ {(Number(pkg.price) || 0).toFixed(2).replace('.', ',')}
                       </div>
                       <button className="w-full py-3 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-bold text-xs hover:scale-[1.02] active:scale-95 transition-all">
                         Comprar

@@ -98,7 +98,7 @@ const OrdersPage = () => {
                   
                   <div className="flex items-center gap-4">
                     <div className="text-right hidden md:block">
-                      <div className="font-black text-slate-800 dark:text-white">R$ {Number(order.total).toFixed(2).replace('.', ',')}</div>
+                      <div className="font-black text-slate-800 dark:text-white">R$ {(Number(order.total) || 0).toFixed(2).replace('.', ',')}</div>
                       <div className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest border ${statusColors[order.status]?.color}`}>
                         {statusColors[order.status]?.label}
                       </div>
@@ -153,13 +153,13 @@ const OrdersPage = () => {
                       {selectedOrder.items.map((item: any, idx: number) => (
                         <div key={idx} className="flex justify-between items-center text-sm">
                           <span className="font-bold text-slate-800 dark:text-white"><span className="text-primary">{item.quantity}x</span> {item.name}</span>
-                          <span className="font-medium text-slate-500">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
+                          <span className="font-medium text-slate-500">R$ {(Number(item.price) || 0).toFixed(2).replace('.', ',')}</span>
                         </div>
                       ))}
                     </div>
                     <div className="pt-4 border-t border-slate-200 dark:border-white/5 flex justify-between items-center">
                       <span className="font-black text-slate-800 dark:text-white">Total</span>
-                      <span className="text-xl font-black text-primary">R$ {Number(selectedOrder.total).toFixed(2).replace('.', ',')}</span>
+                      <span className="text-xl font-black text-primary">R$ {(Number(selectedOrder.total) || 0).toFixed(2).replace('.', ',')}</span>
                     </div>
                   </div>
 

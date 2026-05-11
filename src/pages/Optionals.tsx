@@ -204,7 +204,7 @@ const OptionalsPage = () => {
                           <div key={item.id} className="flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <div className="flex items-center gap-3">
                               <span className="text-sm font-bold dark:text-white">{item.name}</span>
-                              <span className="text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg">R$ {item.price?.toFixed(2).replace('.', ',')}</span>
+                              <span className="text-xs font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg">R$ {(Number(item.price) || 0).toFixed(2).replace('.', ',')}</span>
                             </div>
                             <button 
                               onClick={() => deleteItemMutation.mutate({ id: item.id })}
@@ -316,7 +316,7 @@ const OptionalsPage = () => {
                   group.optional_items.slice(0, 4).map((item: any) => (
                     <div key={item.id} className="flex justify-between items-center text-xs">
                       <span className="text-slate-500 dark:text-slate-400 font-medium">• {item.name}</span>
-                      <span className="text-primary font-bold">R$ {item.price?.toFixed(2).replace('.', ',')}</span>
+                      <span className="text-primary font-bold">R$ {(Number(item.price) || 0).toFixed(2).replace('.', ',')}</span>
                     </div>
                   ))
                 ) : (

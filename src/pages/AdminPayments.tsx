@@ -51,7 +51,7 @@ const AdminPaymentsPage = () => {
       {/* Cards de Métricas Financeiras Reais */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Receita Mensal (MRR)', value: `R$ ${stats?.mrr.toFixed(2)}`, trend: 'Tempo Real', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { label: 'Receita Mensal (MRR)', value: `R$ ${(Number(stats?.mrr) || 0).toFixed(2)}`, trend: 'Tempo Real', icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
           { label: 'Assinaturas Pagas', value: stats?.paidSubscriptions || 0, trend: 'Ativas', icon: CheckCircle2, color: 'text-blue-500', bg: 'bg-blue-50' },
           { label: 'Em Período de Teste', value: stats?.trialSubscriptions || 0, trend: 'Aguardando', icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50' },
           { label: 'Total de Lojas', value: stats?.totalRestaurants || 0, trend: 'Cadastradas', icon: ArrowUpRight, color: 'text-primary', bg: 'bg-primary/5' },
@@ -106,7 +106,7 @@ const AdminPaymentsPage = () => {
                            <span className="text-xs font-medium text-slate-500 uppercase">{res.subscriptionPlan || 'bronze'}</span>
                          </td>
                          <td className="px-8 py-5">
-                           <span className="text-sm font-black text-slate-800 dark:text-white">R$ {amount.toFixed(2)}</span>
+                           <span className="text-sm font-black text-slate-800 dark:text-white">R$ {(Number(amount) || 0).toFixed(2)}</span>
                          </td>
                          <td className="px-8 py-5">
                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
