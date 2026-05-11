@@ -13,7 +13,7 @@ const SettingsPage = () => {
   
   const updateMutation = trpc.restaurants.update.useMutation({
     onSuccess: () => {
-      utils.restaurants.get.invalidate();
+      utils.restaurants.invalidate();
       toast.success('Configurações salvas com sucesso!');
     },
     onError: (err) => {
@@ -25,7 +25,7 @@ const SettingsPage = () => {
   const verifyMutation = trpc.payments.verifySubscription.useMutation({
     onSuccess: (data) => {
       if (data.success) {
-        utils.restaurants.get.invalidate();
+        utils.restaurants.invalidate();
         confetti({
           particleCount: 150,
           spread: 70,
@@ -157,6 +157,13 @@ const SettingsPage = () => {
 
   const handleSave = () => {
     if (!formData.name) return toast.error('Nome é obrigatório');
+    
+    console.log('[CLIENT DEBUG] Salvando Dados:', {
+      url: formData.evolution_api_url,
+      instance: formData.evolution_instance,
+      hasKey: !!formData.evolution_api_key
+    });
+
     updateMutation.mutate({
       name: formData.name,
       description: formData.description,
