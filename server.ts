@@ -15,7 +15,7 @@ app.use(express.json());
 
 app.use((req, res, next) => {
   res.on('finish', () => {
-    console.log(`[LOG] ${req.method} ${req.url} - ${res.statusCode}`);
+    console.log(`[LOG] ${req.method} ${req.url} - Host: ${req.headers.host} - Status: ${res.statusCode}`);
   });
   next();
 });
