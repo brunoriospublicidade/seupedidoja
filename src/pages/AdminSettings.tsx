@@ -147,9 +147,26 @@ const AdminSettingsPage = () => {
 
           <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800 flex gap-3">
             <ShieldCheck className="text-emerald-500 shrink-0" size={18} />
-            <p className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium leading-relaxed">
+            <p className="text-[10px] text-emerald-700 dark:text-blue-300 font-medium leading-relaxed">
               Estes dados permitem que o sistema envie mensagens automáticas usando o seu próprio número de WhatsApp via Evolution API.
             </p>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={() => {
+                updateMutation.mutate({
+                  evolution_url: evolutionUrl,
+                  evolution_key: evolutionKey,
+                  evolution_instance: evolutionInstance
+                });
+              }}
+              disabled={updateMutation.isLoading}
+              className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-amber-500/20 active:scale-95 disabled:opacity-50"
+            >
+              {updateMutation.isLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
+              Salvar Conexão WhatsApp
+            </button>
           </div>
         </div>
 
