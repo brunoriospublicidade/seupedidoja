@@ -636,9 +636,44 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                   </div>
                 ) : (
                   <>
+                    {/* Top Call to Action (Login/Register) */}
+                    {!loggedCustomer && (
+                      <div className="bg-primary/5 border border-primary/20 rounded-[32px] p-6 space-y-4 animate-in fade-in slide-in-from-top-4">
+                        <div className="flex justify-between items-center">
+                          <div className="space-y-1">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Resumo da sua Sacola</h4>
+                            <div className="text-2xl font-black text-slate-800">
+                              R$ {(Number(totalPrice) || 0).toFixed(2).replace('.', ',')}
+                            </div>
+                          </div>
+                          <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-primary">
+                            <ShoppingBag size={24} />
+                          </div>
+                        </div>
+                        <div className="pt-4 border-t border-primary/10">
+                          <p className="text-xs text-slate-600 font-medium mb-3">
+                            Entre ou cadastre-se para salvar seus endereços e ganhar tempo nos próximos pedidos!
+                          </p>
+                          <button 
+                            onClick={() => setIsAuthModalOpen(true)}
+                            className="w-full py-3 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                          >
+                            <LogIn size={14} /> Fazer Login / Cadastro
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Item List */}
                     <div className="space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Seu Carrinho</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Seu Carrinho</h4>
+                        {loggedCustomer && (
+                          <div className="text-sm font-black text-primary">
+                            R$ {(Number(totalPrice) || 0).toFixed(2).replace('.', ',')}
+                          </div>
+                        )}
+                      </div>
                       <div className="space-y-3">
                         {cart.map((item, idx) => (
                           <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
