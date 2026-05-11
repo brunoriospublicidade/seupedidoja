@@ -224,6 +224,28 @@ export const restaurantsRouter = router({
       };
     }),
 
+  
+  updateWhatsAppSettings: publicProcedure
+    .input(z.object({
+      evolution_url: z.string(),
+      evolution_key: z.string(),
+      evolution_instance: z.string()
+    }))
+    .mutation(async ({ input }) => {
+      await db.insert(settings)
+        .values({
+          key: 'marketing_config',
+          value: input,
+          updatedAt: new Date()
+        })
+        .onConflictDoUpdate({
+          target: settings.key,
+          set: { value: input, updatedAt: new Date() }
+        });
+      
+      return { success: true };
+    }),
+
   getEvolutionSettings: publicProcedure
     .query(async ({ ctx }) => {
       // 1. Buscar configurações globais

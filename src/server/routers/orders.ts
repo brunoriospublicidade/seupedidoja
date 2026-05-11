@@ -47,6 +47,7 @@ export const ordersRouter = router({
         name: z.string(),
         phone: z.string(),
         address: z.string().optional(),
+        neighborhood: z.string().optional(),
       })
     }))
     .mutation(async ({ input }) => {
@@ -56,9 +57,14 @@ export const ordersRouter = router({
         name: input.customer.name,
         phone: input.customer.phone,
         address: input.customer.address,
+        neighborhood: input.customer.neighborhood,
       }).onConflictDoUpdate({
         target: [customers.phone, customers.restaurantId],
-        set: { name: input.customer.name, address: input.customer.address }
+        set: { 
+          name: input.customer.name, 
+          address: input.customer.address,
+          neighborhood: input.customer.neighborhood
+        }
       }).returning();
 
       // 2. Create order

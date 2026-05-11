@@ -17,7 +17,7 @@ const SettingsPage = () => {
       utils.restaurants.invalidate();
       toast.success('Configurações salvas com sucesso!');
     },
-    onError: (err) => {
+    onError: (err: any) => {
       console.error('[UPDATE ERROR]', err);
       toast.error('Erro ao salvar: ' + err.message);
     }
@@ -28,7 +28,7 @@ const SettingsPage = () => {
       utils.restaurants.invalidate();
       toast.success('Configurações de WhatsApp salvas!');
     },
-    onError: (err) => {
+    onError: (err: any) => {
       toast.error('Erro ao salvar WhatsApp: ' + err.message);
     }
   });
@@ -57,7 +57,7 @@ const SettingsPage = () => {
         window.location.href = data.url;
       }
     },
-    onError: (err) => {
+    onError: (err: any) => {
       toast.error('Erro ao iniciar checkout: ' + err.message);
     }
   });
