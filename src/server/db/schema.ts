@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, decimal, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, decimal, integer, boolean, jsonb, uniqueIndex, unique } from 'drizzle-orm/pg-core';
 
 export const restaurants = pgTable('restaurants', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -97,7 +97,9 @@ export const customers = pgTable('customers', {
   address: text('address'), // Added back to prevent destructive push
   password: text('password'), // Hash da senha para login
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (t) => ({
+  unq: unique().on(t.restaurantId, t.phone),
+}));
 
 export const customerAddresses = pgTable('customer_addresses', {
   id: uuid('id').defaultRandom().primaryKey(),
