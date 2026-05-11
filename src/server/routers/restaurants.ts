@@ -72,6 +72,11 @@ export const restaurantsRouter = router({
       phone: z.string(),
       food_type: z.string().optional(),
       address: z.string().optional(),
+      cep: z.string().optional(),
+      complement: z.string().optional(),
+      neighborhood: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       // 1. Check if restaurant with same phone already exists
@@ -91,6 +96,11 @@ export const restaurantsRouter = router({
         whatsapp: input.phone,
         foodType: input.food_type,
         address: input.address,
+        cep: input.cep,
+        complement: input.complement,
+        neighborhood: input.neighborhood,
+        city: input.city,
+        state: input.state,
         description: `Email: ${input.email}`,
         slug,
         subscriptionPlan: 'bronze',
@@ -114,6 +124,11 @@ export const restaurantsRouter = router({
       phone: z.string().optional(),
       whatsapp: z.string().optional(),
       address: z.string().optional(),
+      cep: z.string().optional(),
+      complement: z.string().optional(),
+      neighborhood: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
       opening_hours: z.any().optional(),
       subscription_plan: z.string().optional(),
       theme_preference: z.enum(['light', 'dark']).optional(),
@@ -141,6 +156,11 @@ export const restaurantsRouter = router({
       if (input.phone) mappedData.phone = input.phone;
       if (input.whatsapp) mappedData.whatsapp = input.whatsapp;
       if (input.address) mappedData.address = input.address;
+      if (input.cep) mappedData.cep = input.cep;
+      if (input.complement) mappedData.complement = input.complement;
+      if (input.neighborhood) mappedData.neighborhood = input.neighborhood;
+      if (input.city) mappedData.city = input.city;
+      if (input.state) mappedData.state = input.state;
       if (input.opening_hours) mappedData.openingHours = input.opening_hours;
       if (input.subscription_plan) mappedData.subscriptionPlan = input.subscription_plan;
       if (input.theme_preference) mappedData.themePreference = input.theme_preference;

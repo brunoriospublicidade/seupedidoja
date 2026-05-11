@@ -100,7 +100,13 @@ const SettingsPage = () => {
         opening_hours: initializedHours,
         evolution_api_url: restaurant.evolutionApiUrl || '',
         evolution_api_key: restaurant.evolutionApiKey || '',
-        evolution_instance: restaurant.evolutionInstance || ''
+        evolution_instance: restaurant.evolutionInstance || '',
+        cep: restaurant.cep || '',
+        address: restaurant.address || '',
+        complement: restaurant.complement || '',
+        neighborhood: restaurant.neighborhood || '',
+        city: restaurant.city || '',
+        state: restaurant.state || ''
       });
     }
   }, [restaurant]);
@@ -123,6 +129,28 @@ const SettingsPage = () => {
     setFormData({ ...formData, [field]: formatted });
   };
 
+  const handleCEPBlur = async () => {
+    const cep = formData.cep?.replace(/\D/g, '');
+    if (cep?.length !== 8) return;
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      if (!data.erro) {
+        setFormData({
+          ...formData,
+          address: data.logradouro,
+          neighborhood: data.bairro,
+          city: data.localidade,
+          state: data.uf
+        });
+        toast.success('Endereço preenchido automaticamente!');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar CEP', error);
+    }
+  };
+
   const handleSave = () => {
     if (!formData.name) return toast.error('Nome é obrigatório');
     updateMutation.mutate({
@@ -137,7 +165,13 @@ const SettingsPage = () => {
       slug: formData.slug,
       evolution_api_url: formData.evolution_api_url,
       evolution_api_key: formData.evolution_api_key,
-      evolution_instance: formData.evolution_instance
+      evolution_instance: formData.evolution_instance,
+      cep: formData.cep,
+      address: formData.address,
+      complement: formData.complement,
+      neighborhood: formData.neighborhood,
+      city: formData.city,
+      state: formData.state
     });
   };
 
@@ -300,6 +334,73 @@ const SettingsPage = () => {
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageCircle size={12} className="text-primary" /> WhatsApp para Pedidos</label>
                   <input type="text" value={formData.whatsapp} onChange={(e) => handlePhoneChange(e, 'whatsapp')} className="w-full p-4 rounded-2xl border border-primary/20 bg-primary/5 outline-none font-black text-primary" />
+                </div>
+              </div>
+
+              {/* Endereço Detalhado */}
+              <div className="pt-8 border-t border-slate-50 dark:border-slate-800 space-y-6">
+                <div className="flex items-center gap-2">
+                  <MapPin size={16} className="text-primary" />
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Endereço da Loja</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">CEP</label>
+                    <input 
+                      type="text" 
+                      value={formData.cep} 
+                      onChange={(e) => setFormData({...formData, cep: e.target.value})}
+                      onBlur={handleCEPBlur}
+                      placeholder="00000-000"
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" 
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-4">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Logradouro (Rua/Avenida)</label>
+                    <input 
+                      type="text" 
+                      value={formData.address} 
+                      onChange={(e) => setFormData({...formData, address: e.target.value})} 
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" 
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Complemento</label>
+                    <input 
+                      type="text" 
+                      value={formData.complement} 
+                      onChange={(e) => setFormData({...formData, complement: e.target.value})} 
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" 
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bairro</label>
+                    <input 
+                      type="text" 
+                      value={formData.neighborhood} 
+                      onChange={(e) => setFormData({...formData, neighborhood: e.target.value})} 
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" 
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cidade</label>
+                    <input 
+                      type="text" 
+                      value={formData.city} 
+                      onChange={(e) => setFormData({...formData, city: e.target.value})} 
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" 
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Estado</label>
+                    <input 
+                      type="text" 
+                      value={formData.state} 
+                      onChange={(e) => setFormData({...formData, state: e.target.value})} 
+                      maxLength={2}
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold uppercase" 
+                    />
+                  </div>
                 </div>
               </div>
 
