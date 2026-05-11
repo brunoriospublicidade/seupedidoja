@@ -58,9 +58,14 @@ const RegisterPage = () => {
 
   const registerMutation = trpc.restaurants.create.useMutation({
     onSuccess: (data) => {
+      console.log('Cadastro realizado com sucesso, ID:', data.id);
       login(data.id);
       toast.success('Conta criada com sucesso! Bem-vindo ao Seu Pedido Já.');
-      setLocation('/admin');
+      
+      // Pequeno delay para garantir que o estado de auth foi propagado
+      setTimeout(() => {
+        setLocation('/admin');
+      }, 500);
     },
     onError: (err) => {
       if (err.message.includes('Já existe um cadastro')) {

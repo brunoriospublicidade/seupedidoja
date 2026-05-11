@@ -238,14 +238,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { restaurantId } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Robust check: use context OR direct localStorage if state hasn't propagated yet
+  // Robust check: use context OR direct localStorage
   const activeId = restaurantId || localStorage.getItem('restaurant_id');
 
   useEffect(() => {
-    if (!activeId) {
+    // Give a tiny bit of time for state to settle if needed, but check localStorage immediately
+    const checkId = restaurantId || localStorage.getItem('restaurant_id');
+    if (!checkId) {
       setLocation('/cadastro');
     }
-  }, [activeId, setLocation]);
+  }, [activeId, restaurantId, setLocation]);
 
   if (!activeId) return null;
   
@@ -266,7 +268,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
+  const [location, setLocation] = useLocation();
   const [restaurantId, setRestaurantId] = useState<string>(localStorage.getItem('restaurant_id') || '');
+
+  // Domain-based routing logic
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const isDashboardDomain = hostname.startsWith('painel.');
+    
+    if (isDashboardDomain && location === '/') {
+      setLocation('/admin');
+    }
+  }, [location, setLocation]);
 
   const login = (id: string) => {
     localStorage.setItem('restaurant_id', id);

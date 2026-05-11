@@ -37,5 +37,5 @@ RUN npm install -g tsx
 
 EXPOSE 4001
 
-# Use tsx but with explicit host and port
-CMD ["tsx", "server.ts", "--host", "0.0.0.0"]
+# Use a shell script to run migration then start server
+CMD ["sh", "-c", "npm run db:push && tsx server.ts"]
