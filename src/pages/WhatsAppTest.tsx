@@ -25,8 +25,8 @@ const WhatsAppTestPage = () => {
   });
 
   const handleTest = () => {
-    if (!testData.number) return toast.error('Digite um número para teste');
-    testMutation.mutate(testData);
+    if (!testData.number) return toast.error('Digite um número para o teste');
+    testMutation.mutate({ phone: testData.number });
   };
 
   return (

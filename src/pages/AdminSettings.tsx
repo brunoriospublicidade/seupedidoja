@@ -156,6 +156,8 @@ const AdminSettingsPage = () => {
             <button
               onClick={() => {
                 updateMutation.mutate({
+                  free_credits: parseInt(freeCredits),
+                  price_per_message: parseFloat(msgPrice.replace(',', '.')),
                   evolution_url: evolutionUrl,
                   evolution_key: evolutionKey,
                   evolution_instance: evolutionInstance

@@ -1,7 +1,7 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { db } from '../db';
-import { restaurants, categories, products, optionalGroups, optionalItems } from '../db/schema';
+import { restaurants, categories, products, optionalGroups, optionalItems, settings } from '../db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 
 const generateSlug = (name: string) => {
