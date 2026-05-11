@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "server": "tsx watch --env-file=.env server.ts",
     "start": "tsx server.ts",
-    "db:push": "drizzle-kit push:pg"
+    "db:push": "drizzle-kit push:pg --force"
   },
   "dependencies": {
     "@tanstack/react-query": "^4.36.1",
