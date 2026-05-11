@@ -2,7 +2,7 @@ import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { db } from '../db';
 import { restaurants, categories, products, optionalGroups, optionalItems } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 
 const generateSlug = (name: string) => {
   return name
@@ -215,6 +215,21 @@ export const restaurantsRouter = router({
   getEvolutionSettings: publicProcedure
     .query(async ({ ctx }) => {
       const restaurantId = ctx.restaurantId;
+      
+      // Forçar criação das colunas caso a migração do servidor tenha falhado
+      try {
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_api_url TEXT;`);
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_api_key TEXT;`);
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_instance TEXT;`);
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS cep TEXT;`);
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS complement TEXT;`);
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS city TEXT;`);
+        await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS state TEXT;`);
+      } catch (e) {
+        console.error('[SYNC ERROR]', e);
+      }
+
       const [restaurant] = restaurantId 
         ? await db.select().from(restaurants).where(eq(restaurants.id, restaurantId))
         : [];
