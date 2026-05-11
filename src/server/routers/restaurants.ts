@@ -153,32 +153,32 @@ export const restaurantsRouter = router({
       if (!targetId) throw new Error('Restaurant ID not found');
 
       const mappedData: any = {};
-      if (input.name) {
+      if (input.name !== undefined) {
         mappedData.name = input.name;
         if (!input.slug) mappedData.slug = generateSlug(input.name);
       }
-      if (input.description) mappedData.description = input.description;
-      if (input.food_type) mappedData.foodType = input.food_type;
-      if (input.slug) mappedData.slug = input.slug;
-      if (input.logo_url) mappedData.logoUrl = input.logo_url;
-      if (input.banner_url) mappedData.bannerUrl = input.banner_url;
-      if (input.primary_color) mappedData.primaryColor = input.primary_color;
-      if (input.phone) mappedData.phone = input.phone;
-      if (input.whatsapp) mappedData.whatsapp = input.whatsapp;
-      if (input.address) mappedData.address = input.address;
-      if (input.cep) mappedData.cep = input.cep;
-      if (input.complement) mappedData.complement = input.complement;
-      if (input.neighborhood) mappedData.neighborhood = input.neighborhood;
-      if (input.city) mappedData.city = input.city;
-      if (input.state) mappedData.state = input.state;
-      if (input.opening_hours) mappedData.openingHours = input.opening_hours;
-      if (input.subscription_plan) mappedData.subscriptionPlan = input.subscription_plan;
-      if (input.theme_preference) mappedData.themePreference = input.theme_preference;
+      if (input.description !== undefined) mappedData.description = input.description;
+      if (input.food_type !== undefined) mappedData.foodType = input.food_type;
+      if (input.slug !== undefined) mappedData.slug = input.slug;
+      if (input.logo_url !== undefined) mappedData.logoUrl = input.logo_url;
+      if (input.banner_url !== undefined) mappedData.bannerUrl = input.banner_url;
+      if (input.primary_color !== undefined) mappedData.primaryColor = input.primary_color;
+      if (input.phone !== undefined) mappedData.phone = input.phone;
+      if (input.whatsapp !== undefined) mappedData.whatsapp = input.whatsapp;
+      if (input.address !== undefined) mappedData.address = input.address;
+      if (input.cep !== undefined) mappedData.cep = input.cep;
+      if (input.complement !== undefined) mappedData.complement = input.complement;
+      if (input.neighborhood !== undefined) mappedData.neighborhood = input.neighborhood;
+      if (input.city !== undefined) mappedData.city = input.city;
+      if (input.state !== undefined) mappedData.state = input.state;
+      if (input.opening_hours !== undefined) mappedData.openingHours = input.opening_hours;
+      if (input.subscription_plan !== undefined) mappedData.subscriptionPlan = input.subscription_plan;
+      if (input.theme_preference !== undefined) mappedData.themePreference = input.theme_preference;
       if (input.evolution_api_url !== undefined) mappedData.evolutionApiUrl = input.evolution_api_url;
       if (input.evolution_api_key !== undefined) mappedData.evolutionApiKey = input.evolution_api_key;
       if (input.evolution_instance !== undefined) mappedData.evolutionInstance = input.evolution_instance;
-      if (input.role) mappedData.role = input.role;
-      if (input.delivery_config) mappedData.deliveryConfig = input.delivery_config;
+      if (input.role !== undefined) mappedData.role = input.role;
+      if (input.delivery_config !== undefined) mappedData.deliveryConfig = input.delivery_config;
       
       console.log('[UPDATE DEBUG] Restaurant ID:', targetId);
       console.log('[UPDATE DEBUG] Mapped Data:', mappedData);
