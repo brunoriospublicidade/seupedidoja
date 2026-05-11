@@ -39,4 +39,4 @@ RUN npm install -g tsx
 EXPOSE 4001
 
 # Run migrations and start server
-CMD ["sh", "-c", "CI=true npx drizzle-kit push:pg || echo 'Warning: DB push failed, attempting to start server anyway...' && tsx server.ts"]
+CMD ["sh", "-c", "npx drizzle-kit push:pg || echo 'DB push skipped or failed' && tsx server.ts"]

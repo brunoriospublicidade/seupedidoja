@@ -92,14 +92,12 @@ export const customers = pgTable('customers', {
   id: uuid('id').defaultRandom().primaryKey(),
   restaurantId: uuid('restaurant_id').references(() => restaurants.id),
   name: text('name').notNull(),
-  email: text('email').unique(),
+  email: text('email'),
   phone: text('phone').notNull(),
   address: text('address'), // Added back to prevent destructive push
   password: text('password'), // Hash da senha para login
   createdAt: timestamp('created_at').defaultNow(),
-}, (t) => ({
-  unq: unique().on(t.restaurantId, t.phone),
-}));
+});
 
 export const customerAddresses = pgTable('customer_addresses', {
   id: uuid('id').defaultRandom().primaryKey(),
