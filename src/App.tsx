@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Route, Switch, Link, useLocation, Redirect } from 'wouter';
 import { 
+  ShoppingBag,
   LayoutDashboard, 
   UtensilsCrossed, 
   Settings, 
