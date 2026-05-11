@@ -10,7 +10,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const [activeProduct, setActiveProduct] = useState<any>(null);
   const [cart, setCart] = useState<any[]>([]);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [customer, setCustomer] = useState({ name: '', phone: '', address: '' });
+  const [customer, setCustomer] = useState({ name: '', phone: '', address: '', neighborhood: '' });
   const [orderComplete, setOrderComplete] = useState(false);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<any>(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -211,8 +211,10 @@ const PublicMenu = ({ slug }: { slug: string }) => {
         `*Pagamento:* Dinheiro (Troco p/ R$ 0,00)`;
 
       const encodedMessage = encodeURIComponent(message);
-      const phone = menu.restaurant.phone.replace(/\D/g, '');
-      window.open(`https://wa.me/55${phone}?text=${encodedMessage}`, '_blank');
+      const phone = menu?.restaurant?.phone?.replace(/\D/g, '') || '';
+      if (phone) {
+        window.open(`https://wa.me/55${phone}?text=${encodedMessage}`, '_blank');
+      }
 
       setOrderComplete(true);
       setCart([]);
@@ -241,7 +243,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       setLoggedCustomer(user);
       localStorage.setItem(`customer_${slug}`, JSON.stringify(user));
       setIsAuthModalOpen(false);
-      setCustomer({ name: user.name, phone: user.phone, address: '' });
+      setCustomer({ name: user.name, phone: user.phone, address: '', neighborhood: '' });
       toast.success(`Bem-vindo, ${user.name}!`);
     },
     onError: (err) => toast.error(err.message)
@@ -252,7 +254,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       setLoggedCustomer(user);
       localStorage.setItem(`customer_${slug}`, JSON.stringify(user));
       setIsAuthModalOpen(false);
-      setCustomer({ name: user.name, phone: user.phone, address: '' });
+      setCustomer({ name: user.name, phone: user.phone, address: '', neighborhood: '' });
       refetchAddresses();
       toast.success('Cadastro realizado com sucesso!');
     },
@@ -278,7 +280,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
     if (saved) {
       const user = JSON.parse(saved);
       setLoggedCustomer(user);
-      setCustomer({ name: user.name, phone: user.phone, address: '' });
+      setCustomer({ name: user.name, phone: user.phone, address: '', neighborhood: '' });
     }
   }, [slug]);
 
