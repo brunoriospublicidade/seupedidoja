@@ -91,12 +91,14 @@ export const ordersRouter = router({
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'apikey': restaurant.evolutionApiKey.trim()
+                'apikey': restaurant.evolutionApiKey.trim(),
+                'accept': '*/*'
               },
               body: JSON.stringify({
                 number: recipient,
                 text: messageText,
-                delay: 1200
+                delay: 1200,
+                linkPreview: false
               })
             });
           }
@@ -142,26 +144,34 @@ export const ordersRouter = router({
               const messageText = `Olá, *${customerData.name}*!\n\n${statusMsg}\n\n*Pedido:* #${order.id.slice(-4).toUpperCase()}\n*Restaurante:* ${restaurant.name}`;
 
               const recipientRaw = customerData.phone.replace(/\D/g, '');
+              // Garante 55 + DDD + Numero
               const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
 
-              console.log('[WHATSAPP] Enviando para:', recipient, 'via', apiUrl, 'instancia:', instance);
+              console.log('[WHATSAPP] Enviando Status para:', recipient);
 
               const response = await fetch(`${apiUrl}/message/sendText/${instance}`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'apikey': apiKey
+                  'apikey': apiKey,
+                  'accept': '*/*'
                 },
                 body: JSON.stringify({
                   number: recipient,
-                  text: messageText,
-                  delay: 1200
+                  options: {
+                    delay: 1200,
+                    presence: 'composing',
+                    linkPreview: false
+                  },
+                  text: messageText
                 })
               });
               
               if (!response.ok) {
                 const errBody = await response.text();
                 console.error('[WHATSAPP ERROR RESPONSE]', errBody);
+              } else {
+                console.log('[WHATSAPP SUCCESS] Mensagem enviada com sucesso!');
               }
             }
           }
