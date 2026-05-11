@@ -17,7 +17,7 @@ const Main = () => {
             : 'http://127.0.0.1:4001/trpc',
           headers() {
             return {
-              'x-restaurant-id': localStorage.getItem('restaurant_id') || undefined,
+              'rid': localStorage.getItem('restaurant_id') || undefined,
             };
           },
         }),

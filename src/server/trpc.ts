@@ -2,7 +2,7 @@ import { initTRPC } from '@trpc/server';
 import { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 
 export const createContext = ({ req, res }: CreateExpressContextOptions) => {
-  const restaurantId = req.headers['x-restaurant-id'] as string | undefined;
+  const restaurantId = (req.headers['rid'] || req.headers['x-restaurant-id']) as string | undefined;
   return {
     restaurantId,
   };
