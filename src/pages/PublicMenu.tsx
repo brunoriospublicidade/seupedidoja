@@ -33,8 +33,8 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       .filter(cat => cat.products.length > 0);
   }, [menu, filteredProducts]);
 
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalItems = cart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+  const totalPrice = cart.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0)), 0);
 
   const addToCart = (product: any, quantity: number = 1) => {
     setCart(prev => {
@@ -157,7 +157,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                   <div className="flex-1 space-y-1">
                     <h3 className="font-bold text-slate-800">{product.name}</h3>
                     <p className="text-sm text-slate-500 line-clamp-2">{product.description}</p>
-                    <div className="pt-2 font-bold text-slate-800">R$ {product.price?.toFixed(2).replace('.', ',')}</div>
+                    <div className="pt-2 font-bold text-slate-800">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</div>
                   </div>
                   {product.imageUrl && (
                     <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm">
@@ -195,7 +195,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                 <div>
                   <h2 className="text-2xl font-bold text-slate-800">{activeProduct.name}</h2>
                   <p className="text-slate-500 mt-2">{activeProduct.description}</p>
-                  <div className="text-xl font-bold text-primary mt-4">R$ {activeProduct.price?.toFixed(2).replace('.', ',')}</div>
+                  <div className="text-xl font-bold text-primary mt-4">R$ {(Number(activeProduct.price) || 0).toFixed(2).replace('.', ',')}</div>
                 </div>
 
                 {/* Optionals placeholder */}
@@ -217,7 +217,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                 >
                   Adicionar
                   <span className="opacity-60">•</span>
-                  R$ {activeProduct.price?.toFixed(2).replace('.', ',')}
+                  R$ {(Number(activeProduct.price) || 0).toFixed(2).replace('.', ',')}
                 </button>
               </div>
             </motion.div>
@@ -244,7 +244,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                 </div>
                 <div className="text-left">
                   <div className="font-bold">Ver sacola</div>
-                  <div className="text-xs opacity-80">R$ {totalPrice.toFixed(2).replace('.', ',')}</div>
+                  <div className="text-xs opacity-80">R$ {(Number(totalPrice) || 0).toFixed(2).replace('.', ',')}</div>
                 </div>
               </div>
               <ShoppingBag size={24} />
@@ -331,7 +331,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                     <div className="pt-6 border-t border-slate-100 space-y-4">
                       <div className="flex justify-between items-center text-slate-400 font-bold text-sm">
                         <span>Resumo do Pedido ({totalItems} itens)</span>
-                        <span>R$ {totalPrice.toFixed(2).replace('.', ',')}</span>
+                        <span>R$ {(Number(totalPrice) || 0).toFixed(2).replace('.', ',')}</span>
                       </div>
                       <button 
                         onClick={handleFinishOrder}
