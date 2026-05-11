@@ -94,6 +94,7 @@ export const customers = pgTable('customers', {
   name: text('name').notNull(),
   email: text('email').unique(),
   phone: text('phone').notNull(),
+  address: text('address'), // Added back to prevent destructive push
   password: text('password'), // Hash da senha para login
   createdAt: timestamp('created_at').defaultNow(),
 });
