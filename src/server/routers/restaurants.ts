@@ -168,16 +168,15 @@ export const restaurantsRouter = router({
       if (input.evolution_api_key !== undefined) mappedData.evolutionApiKey = input.evolution_api_key;
       if (input.evolution_instance !== undefined) mappedData.evolutionInstance = input.evolution_instance;
       
-      // Fallback para nomes sem underscore se vierem do frontend
-      if ((input as any).evolutionApiUrl !== undefined) mappedData.evolutionApiUrl = (input as any).evolutionApiUrl;
-      if ((input as any).evolutionApiKey !== undefined) mappedData.evolutionApiKey = (input as any).evolutionApiKey;
-      if ((input as any).evolutionInstance !== undefined) mappedData.evolutionInstance = (input as any).evolutionInstance;
+      console.log('[UPDATE DEBUG] Restaurant ID:', targetId);
+      console.log('[UPDATE DEBUG] Mapped Data:', mappedData);
 
       const [data] = await db.update(restaurants)
         .set(mappedData)
         .where(eq(restaurants.id, targetId))
         .returning();
       
+      console.log('[UPDATE DEBUG] Result:', !!data);
       return data;
     }),
 

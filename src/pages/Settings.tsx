@@ -15,6 +15,10 @@ const SettingsPage = () => {
     onSuccess: () => {
       utils.restaurants.get.invalidate();
       toast.success('Configurações salvas com sucesso!');
+    },
+    onError: (err) => {
+      console.error('[UPDATE ERROR]', err);
+      toast.error('Erro ao salvar: ' + err.message);
     }
   });
 
