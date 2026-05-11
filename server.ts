@@ -14,26 +14,8 @@ app.use(cors());
 app.use(express.json());
 
 // --- AUTO-MIGRATION SCRIPT ---
-import { db } from './src/server/db';
-import { sql } from 'drizzle-orm';
-
-const syncDB = async () => {
-  console.log('[DB] Iniciando sincronização de colunas...');
-  try {
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_api_url TEXT;`);
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_api_key TEXT;`);
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS evolution_instance TEXT;`);
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS cep TEXT;`);
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS complement TEXT;`);
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS city TEXT;`);
-    await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS state TEXT;`);
-    console.log('[DB] Sincronização concluída com sucesso!');
-  } catch (err) {
-    console.error('[DB ERROR] Falha na sincronização:', err);
-  }
-};
-syncDB();
+const port = process.env.PORT || 3001;
+const isDev = process.env.NODE_ENV !== 'production';
 // -----------------------------
 
 app.use((req, res, next) => {

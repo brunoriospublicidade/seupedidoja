@@ -176,26 +176,7 @@ export const restaurantsRouter = router({
         .where(eq(restaurants.id, targetId))
         .returning();
       
-      // FORÇA BRUTA: Garantir que os campos da Evolution API sejam salvos via SQL direto
-      if (input.evolution_api_url || input.evolution_api_key || input.evolution_instance) {
-        try {
-          await db.execute(sql`
-            UPDATE restaurants 
-            SET 
-              evolution_api_url = ${input.evolution_api_url || null},
-              evolution_api_key = ${input.evolution_api_key || null},
-              evolution_instance = ${input.evolution_instance || null}
-            WHERE id = ${targetId}
-          `);
-          console.log('[DB] Evolution API fields forced via SQL');
-        } catch (e) {
-          console.error('[DB ERROR] Force update failed:', e);
-        }
-      }
-      
       console.log('[UPDATE DEBUG] Result:', !!data);
-      return {
-        ...data,
         receivedInput: input // Para diagnóstico
       };
     }),
@@ -231,30 +212,6 @@ export const restaurantsRouter = router({
           optional_items: resOptionalItems.filter(item => item.groupId === group.id)
         })) || [],
       };
-    }),
-  updateWhatsAppSettings: publicProcedure
-    .input(z.object({
-      evolution_api_url: z.string(),
-      evolution_api_key: z.string(),
-      evolution_instance: z.string(),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const restaurantId = ctx.restaurantId;
-      if (!restaurantId) throw new Error('Restaurante não identificado');
-
-      console.log('[FORCE WS UPDATE] ID:', restaurantId);
-      console.log('[FORCE WS UPDATE] Data:', input);
-
-      const [data] = await db.update(restaurants)
-        .set({
-          evolutionApiUrl: input.evolution_api_url,
-          evolutionApiKey: input.evolution_api_key,
-          evolutionInstance: input.evolution_instance,
-        })
-        .where(eq(restaurants.id, restaurantId))
-        .returning();
-
-      return data;
     }),
 
   getEvolutionSettings: publicProcedure

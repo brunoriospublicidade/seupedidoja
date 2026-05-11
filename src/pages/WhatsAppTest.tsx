@@ -40,21 +40,14 @@ const WhatsAppTestPage = () => {
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-2">
-           <div className="text-[10px] font-black uppercase text-slate-400">Status no Servidor</div>
+           <div className="text-[10px] font-black uppercase text-slate-400">Status da Plataforma</div>
            {loadingSettings ? (
              <Loader2 className="animate-spin text-primary" size={16} />
            ) : (
-             <div className="space-y-1">
-               <div className="text-[9px] font-mono text-slate-400 mb-1">ID: {settings?.ctxId}</div>
-               <div className="flex items-center gap-2 text-[10px] font-bold">
-                 <span className={settings?.hasUrl ? 'text-emerald-500' : 'text-red-500'}>● URL: {settings?.hasUrl ? 'OK' : 'Faltando'}</span>
-               </div>
-               <div className="flex items-center gap-2 text-[10px] font-bold">
-                 <span className={settings?.hasKey ? 'text-emerald-500' : 'text-red-500'}>● Key: {settings?.hasKey ? 'OK' : 'Faltando'}</span>
-               </div>
-               <div className="flex items-center gap-2 text-[10px] font-bold">
-                 <span className={settings?.hasInstance ? 'text-emerald-500' : 'text-red-500'}>● Instância: {settings?.hasInstance ? 'OK' : 'Faltando'}</span>
-               </div>
+             <div className="flex items-center gap-2 text-xs font-bold">
+               <span className={settings?.hasUrl && settings?.hasKey && settings?.hasInstance ? 'text-emerald-500' : 'text-red-500'}>
+                 {settings?.hasUrl && settings?.hasKey && settings?.hasInstance ? '● CONECTADO' : '● CONFIGURAÇÃO PENDENTE'}
+               </span>
              </div>
            )}
         </div>
@@ -95,14 +88,6 @@ const WhatsAppTestPage = () => {
           >
             {testMutation.isLoading ? <Loader2 className="animate-spin" /> : <><Send size={20} /> Enviar Teste</>}
           </button>
-
-          {settings?.rawData && (
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-              <div className="text-[8px] font-mono text-slate-400 overflow-auto max-h-20 break-all bg-slate-50 dark:bg-slate-950 p-2 rounded-lg">
-                DB_RAW: {settings.rawData}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Console / Debug */}
