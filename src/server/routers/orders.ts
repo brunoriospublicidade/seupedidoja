@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { db } from '../db';
 import { orders, customers, restaurants, settings, coupons } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 
 export const ordersRouter = router({
   list: publicProcedure
@@ -53,24 +53,35 @@ export const ordersRouter = router({
       })
     }))
     .mutation(async ({ input }) => {
+      console.log('[ORDER ATTEMPT] Input:', JSON.stringify(input, null, 2));
       try {
         let customerId = input.customerId;
 
         // 1. Create or find customer if not provided
         if (!customerId) {
-          const [customer] = await db.insert(customers).values({
-            restaurantId: input.restaurantId,
-            name: input.customer.name,
-            phone: input.customer.phone,
-          }).onConflictDoUpdate({
-            target: [customers.phone, customers.restaurantId],
-            set: { 
-              name: input.customer.name
-            }
-          }).returning();
+          // Tentar encontrar por telefone e restaurante primeiro
+          const [existingCustomer] = await db.select()
+            .from(customers)
+            .where(sql`${customers.phone} = ${input.customer.phone} AND ${customers.restaurantId} = ${input.restaurantId}`);
           
-          if (!customer) throw new Error('Falha ao criar ou atualizar cliente.');
-          customerId = customer.id;
+          if (existingCustomer) {
+            customerId = existingCustomer.id;
+            // Opcional: Atualizar nome se mudou
+            if (existingCustomer.name !== input.customer.name) {
+              await db.update(customers)
+                .set({ name: input.customer.name })
+                .where(eq(customers.id, customerId));
+            }
+          } else {
+            const [newCustomer] = await db.insert(customers).values({
+              restaurantId: input.restaurantId,
+              name: input.customer.name,
+              phone: input.customer.phone,
+            }).returning();
+            
+            if (!newCustomer) throw new Error('Falha ao criar novo cliente.');
+            customerId = newCustomer.id;
+          }
         }
 
         // 2. Handle Coupon usage
