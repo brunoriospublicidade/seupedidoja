@@ -19,7 +19,21 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const [loggedCustomer, setLoggedCustomer] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [authForm, setAuthForm] = useState({ name: '', email: '', phone: '', password: '' });
+  const [authForm, setAuthForm] = useState({ 
+    name: '', 
+    email: '', 
+    phone: '', 
+    password: '',
+    address: {
+      cep: '',
+      address: '',
+      number: '',
+      complement: '',
+      neighborhood: '',
+      city: '',
+      state: 'SP'
+    }
+  });
   const [customerAddresses, setCustomerAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
@@ -170,7 +184,36 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   }, [activeProduct, selectedOptionals, menu]);
 
   const createOrder = trpc.orders.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // WhatsApp Redirection
+      const deliveryConfig = menu?.restaurant?.deliveryConfig as any;
+      const itemsText = cart.map(i => {
+        let text = `${i.quantity}x ${i.name}`;
+        if (i.choices && i.choices.length > 0) {
+          const choicesList = i.choices.map((c: any) => `  + ${c.itemName}`).join('\n');
+          text += `\n${choicesList}`;
+        }
+        return text;
+      }).join('\n');
+
+      const addressText = loggedCustomer && selectedAddressId 
+        ? customerAddresses.find(a => a.id === selectedAddressId)?.address 
+        : customer.address;
+
+      const message = `*Novo Pedido!* 🍕\n\n` +
+        `*Cliente:* ${customer.name}\n` +
+        `*Telefone:* ${customer.phone}\n` +
+        `*Endereço:* ${addressText}\n` +
+        `*Bairro:* ${selectedNeighborhood?.name || customer.neighborhood || 'N/A'}\n\n` +
+        `*Itens:*\n${itemsText}\n\n` +
+        `*Total:* R$ ${totalPrice.toFixed(2)}\n` +
+        (appliedCoupon ? `*Cupom:* ${appliedCoupon.code} (-R$ ${couponDiscount.toFixed(2)})\n` : '') +
+        `*Pagamento:* Dinheiro (Troco p/ R$ 0,00)`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const phone = menu.restaurant.phone.replace(/\D/g, '');
+      window.open(`https://wa.me/55${phone}?text=${encodedMessage}`, '_blank');
+
       setOrderComplete(true);
       setCart([]);
       setAppliedCoupon(null);
@@ -210,6 +253,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       localStorage.setItem(`customer_${slug}`, JSON.stringify(user));
       setIsAuthModalOpen(false);
       setCustomer({ name: user.name, phone: user.phone, address: '' });
+      refetchAddresses();
       toast.success('Cadastro realizado com sucesso!');
     },
     onError: (err) => toast.error(err.message)
@@ -948,19 +992,81 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                 </div>
 
                 {authMode === 'register' && (
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">WhatsApp</label>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                      <input 
-                        type="tel" 
-                        value={authForm.phone}
-                        onChange={(e) => setAuthForm({...authForm, phone: e.target.value})}
-                        placeholder="(00) 00000-0000"
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                      />
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">WhatsApp</label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <input 
+                          type="tel" 
+                          value={authForm.phone}
+                          onChange={(e) => setAuthForm({...authForm, phone: e.target.value})}
+                          placeholder="(00) 00000-0000"
+                          className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                        />
+                      </div>
                     </div>
-                  </div>
+
+                    <div className="pt-4 border-t border-slate-100">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">Endereço de Entrega</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">CEP</label>
+                          <input 
+                            type="text" 
+                            value={authForm.address.cep}
+                            onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, cep: e.target.value}})}
+                            placeholder="00000-000"
+                            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Bairro</label>
+                          <input 
+                            type="text" 
+                            value={authForm.address.neighborhood}
+                            onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, neighborhood: e.target.value}})}
+                            placeholder="Centro"
+                            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Rua / Endereço</label>
+                          <input 
+                            type="text" 
+                            value={authForm.address.address}
+                            onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, address: e.target.value}})}
+                            placeholder="Av. Brasil"
+                            className="w-full px-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Número</label>
+                            <input 
+                              type="text" 
+                              value={authForm.address.number}
+                              onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, number: e.target.value}})}
+                              placeholder="123"
+                              className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Cidade</label>
+                            <input 
+                              type="text" 
+                              value={authForm.address.city}
+                              onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, city: e.target.value}})}
+                              placeholder="São Paulo"
+                              className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div className="space-y-1">
@@ -978,11 +1084,89 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                 </div>
               </div>
 
+              <div className="max-h-60 overflow-y-auto px-1 custom-scrollbar space-y-4">
+                {authMode === 'register' && (
+                  <div className="pt-2 border-t border-slate-100 space-y-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Endereço para Entrega</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400">CEP</label>
+                        <input 
+                          type="text" 
+                          value={authForm.address.cep}
+                          onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, cep: e.target.value}})}
+                          placeholder="00000-000"
+                          className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400">Bairro</label>
+                        <input 
+                          type="text" 
+                          value={authForm.address.neighborhood}
+                          onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, neighborhood: e.target.value}})}
+                          placeholder="Centro"
+                          className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400">Endereço (Rua)</label>
+                      <input 
+                        type="text" 
+                        value={authForm.address.address}
+                        onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, address: e.target.value}})}
+                        placeholder="Ex: Av. Brasil"
+                        className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400">Número</label>
+                        <input 
+                          type="text" 
+                          value={authForm.address.number}
+                          onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, number: e.target.value}})}
+                          placeholder="123"
+                          className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400">Cidade</label>
+                        <input 
+                          type="text" 
+                          value={authForm.address.city}
+                          onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, city: e.target.value}})}
+                          placeholder="Sua Cidade"
+                          className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-slate-400">Complemento</label>
+                      <input 
+                        type="text" 
+                        value={authForm.address.complement}
+                        onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, complement: e.target.value}})}
+                        placeholder="Ex: Apto 101"
+                        className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button 
                 onClick={() => {
                   if (authMode === 'login') {
                     loginMutation.mutate({ restaurantId: menu.restaurant.id, email: authForm.email, password: authForm.password });
                   } else {
+                    if (!authForm.name || !authForm.email || !authForm.password || !authForm.phone) {
+                      return toast.error('Preencha os dados pessoais básicos.');
+                    }
+                    if (!authForm.address.address || !authForm.address.neighborhood || !authForm.address.number || !authForm.address.city || !authForm.address.cep) {
+                      return toast.error('Por favor, preencha o endereço completo para entrega.');
+                    }
                     registerMutation.mutate({ restaurantId: menu.restaurant.id, ...authForm });
                   }
                 }}

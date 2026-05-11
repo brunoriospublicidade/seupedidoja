@@ -12,7 +12,17 @@ export const customerPortalRouter = router({
       name: z.string().min(3),
       email: z.string().email(),
       phone: z.string().min(10),
-      password: z.string().min(6)
+      password: z.string().min(6),
+      address: z.object({
+        name: z.string().default('Meu Endereço'),
+        cep: z.string(),
+        address: z.string(),
+        number: z.string(),
+        complement: z.string().optional(),
+        neighborhood: z.string(),
+        city: z.string(),
+        state: z.string()
+      })
     }))
     .mutation(async ({ input }) => {
       // Check if email already exists for this restaurant
@@ -28,6 +38,7 @@ export const customerPortalRouter = router({
 
       const hashedPassword = await bcrypt.hash(input.password, 10);
 
+      // 1. Create Customer
       const [customer] = await db.insert(customers)
         .values({
           restaurantId: input.restaurantId,
@@ -37,6 +48,20 @@ export const customerPortalRouter = router({
           password: hashedPassword,
         })
         .returning();
+
+      // 2. Create Initial Address
+      await db.insert(customerAddresses)
+        .values({
+          customerId: customer.id,
+          name: input.address.name,
+          cep: input.address.cep,
+          address: input.address.address,
+          number: input.address.number,
+          complement: input.address.complement,
+          neighborhood: input.address.neighborhood,
+          city: input.address.city,
+          state: input.address.state
+        });
 
       const { password: _, ...userWithoutPassword } = customer;
       return userWithoutPassword;
