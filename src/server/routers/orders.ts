@@ -53,79 +53,92 @@ export const ordersRouter = router({
       })
     }))
     .mutation(async ({ input }) => {
-      let customerId = input.customerId;
-
-      // 1. Create or find customer if not provided
-      if (!customerId) {
-        const [customer] = await db.insert(customers).values({
-          restaurantId: input.restaurantId,
-          name: input.customer.name,
-          phone: input.customer.phone,
-          // Se não estiver logado, não salva senha nem email aqui por enquanto
-        }).onConflictDoUpdate({
-          target: [customers.phone, customers.restaurantId],
-          set: { 
-            name: input.customer.name
-          }
-        }).returning();
-        customerId = customer.id;
-      }
-
-      // 2. Handle Coupon usage
-      if (input.couponId) {
-        const [coupon] = await db.select().from(coupons).where(eq(coupons.id, input.couponId));
-        if (coupon && coupon.active) {
-          await db.update(coupons)
-            .set({ usageCount: (coupon.usageCount || 0) + 1 })
-            .where(eq(coupons.id, coupon.id));
-        }
-      }
-
-      // 3. Create order
-      const [order] = await db.insert(orders).values({
-        restaurantId: input.restaurantId,
-        customerId: customerId,
-        items: input.items,
-        total: input.total.toString(),
-        address: input.customer.address,
-        neighborhood: input.customer.neighborhood,
-        status: 'pending'
-      }).returning();
-
-      // 4. Notificar o RESTAURANTE
       try {
-        const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, input.restaurantId));
-        const [configRow] = await db.select().from(settings).where(eq(settings.key, 'marketing_config'));
-        const config = (configRow?.value as any) || {};
+        let customerId = input.customerId;
 
-        const apiUrl = config.evolution_url?.replace(/\/$/, '').trim();
-        const apiKey = config.evolution_key?.trim();
-        const instance = config.evolution_instance?.trim();
-
-        if (apiUrl && apiKey && instance && restaurant?.whatsapp) {
-          const messageText = `🔔 *NOVO PEDIDO RECEBIDO!* (#${order.id.slice(-4).toUpperCase()})\n\n` +
-            `*Cliente:* ${input.customer.name}\n` +
-            `*Valor:* R$ ${input.total.toFixed(2)}\n\n` +
-            `Acesse o painel para gerenciar o pedido.`;
-
-          const recipientRaw = restaurant.whatsapp.replace(/\D/g, '');
-          const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
-
-          await fetch(`${apiUrl}/message/sendText/${instance}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'apikey': apiKey, 'accept': '*/*' },
-            body: JSON.stringify({
-              number: recipient,
-              textMessage: { text: messageText },
-              options: { delay: 1200, presence: 'composing', linkPreview: false }
-            })
-          });
+        // 1. Create or find customer if not provided
+        if (!customerId) {
+          const [customer] = await db.insert(customers).values({
+            restaurantId: input.restaurantId,
+            name: input.customer.name,
+            phone: input.customer.phone,
+          }).onConflictDoUpdate({
+            target: [customers.phone, customers.restaurantId],
+            set: { 
+              name: input.customer.name
+            }
+          }).returning();
+          
+          if (!customer) throw new Error('Falha ao criar ou atualizar cliente.');
+          customerId = customer.id;
         }
-      } catch (e) {
-        console.error('[NOTIFY RESTAURANT ERROR]', e);
-      }
 
-      return order;
+        // 2. Handle Coupon usage
+        if (input.couponId) {
+          try {
+            const [coupon] = await db.select().from(coupons).where(eq(coupons.id, input.couponId));
+            if (coupon && coupon.active) {
+              await db.update(coupons)
+                .set({ usageCount: (coupon.usageCount || 0) + 1 })
+                .where(eq(coupons.id, coupon.id));
+            }
+          } catch (couponErr) {
+            console.error('[COUPON ERROR]', couponErr);
+            // Don't fail the whole order for a coupon update error
+          }
+        }
+
+        // 3. Create order
+        const [order] = await db.insert(orders).values({
+          restaurantId: input.restaurantId,
+          customerId: customerId,
+          items: input.items,
+          total: input.total.toString(),
+          address: input.customer.address,
+          neighborhood: input.customer.neighborhood,
+          status: 'pending'
+        }).returning();
+
+        if (!order) throw new Error('Falha ao gerar registro do pedido no banco.');
+
+        // 4. Notificar o RESTAURANTE
+        try {
+          const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, input.restaurantId));
+          const [configRow] = await db.select().from(settings).where(eq(settings.key, 'marketing_config'));
+          const config = (configRow?.value as any) || {};
+
+          const apiUrl = config.evolution_url?.replace(/\/$/, '').trim();
+          const apiKey = config.evolution_key?.trim();
+          const instance = config.evolution_instance?.trim();
+
+          if (apiUrl && apiKey && instance && restaurant?.whatsapp) {
+            const messageText = `🔔 *NOVO PEDIDO RECEBIDO!* (#${order.id.slice(-4).toUpperCase()})\n\n` +
+              `*Cliente:* ${input.customer.name}\n` +
+              `*Valor:* R$ ${input.total.toFixed(2)}\n\n` +
+              `Acesse o painel para gerenciar o pedido.`;
+
+            const recipientRaw = restaurant.whatsapp.replace(/\D/g, '');
+            const recipient = recipientRaw.startsWith('55') ? recipientRaw : `55${recipientRaw}`;
+
+            await fetch(`${apiUrl}/message/sendText/${instance}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'apikey': apiKey, 'accept': '*/*' },
+              body: JSON.stringify({
+                number: recipient,
+                textMessage: { text: messageText },
+                options: { delay: 1200, presence: 'composing', linkPreview: false }
+              })
+            });
+          }
+        } catch (e) {
+          console.error('[NOTIFY RESTAURANT ERROR]', e);
+        }
+
+        return order;
+      } catch (err: any) {
+        console.error('[ORDER CREATE ERROR]', err);
+        throw new Error(`Erro ao processar pedido: ${err.message}`);
+      }
     }),
 
   updateStatus: publicProcedure
