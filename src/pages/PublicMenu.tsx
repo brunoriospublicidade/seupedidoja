@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2 } from 'lucide-react';
+import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2, Ticket, Lock, UserPlus, LogOut, Map } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trpc } from '../lib/trpc';
@@ -14,6 +14,30 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const [orderComplete, setOrderComplete] = useState(false);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<any>(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
+
+  // Auth & Profile State
+  const [loggedCustomer, setLoggedCustomer] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authForm, setAuthForm] = useState({ name: '', email: '', phone: '', password: '' });
+  const [customerAddresses, setCustomerAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [newAddressForm, setNewAddressForm] = useState({
+    name: '',
+    cep: '',
+    address: '',
+    number: '',
+    complement: '',
+    neighborhood: '',
+    city: '',
+    state: ''
+  });
+
+  // Coupon State
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
 
   const { data: menu, isLoading } = trpc.restaurants.getPublicMenu.useQuery({ slug });
 
@@ -52,7 +76,21 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const totalItems = cart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
   const itemsPrice = cart.reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 0)), 0);
-  const totalPrice = itemsPrice + deliveryFee;
+  
+  // Recalcular desconto do cupom sempre que o preço dos itens mudar
+  useEffect(() => {
+    if (appliedCoupon) {
+      if (appliedCoupon.type === 'percentage') {
+        setCouponDiscount(itemsPrice * (Number(appliedCoupon.value) / 100));
+      } else {
+        setCouponDiscount(Math.min(itemsPrice, Number(appliedCoupon.value)));
+      }
+    } else {
+      setCouponDiscount(0);
+    }
+  }, [appliedCoupon, itemsPrice]);
+
+  const totalPrice = Math.max(0, itemsPrice + deliveryFee - couponDiscount);
 
   const [selectedOptionals, setSelectedOptionals] = useState<Record<string, string[]>>({});
 
@@ -135,12 +173,96 @@ const PublicMenu = ({ slug }: { slug: string }) => {
     onSuccess: () => {
       setOrderComplete(true);
       setCart([]);
+      setAppliedCoupon(null);
+      setCouponCode('');
       toast.success('Pedido enviado com sucesso!');
     },
     onError: (err) => {
       toast.error('Erro ao enviar pedido: ' + err.message);
     }
   });
+
+  const validateCoupon = trpc.coupons.validate.useMutation({
+    onSuccess: (res) => {
+      if (res.valid) {
+        setAppliedCoupon(res.coupon);
+        toast.success('Cupom aplicado com sucesso!');
+      } else {
+        toast.error(res.message);
+      }
+    }
+  });
+
+  const loginMutation = trpc.customerPortal.login.useMutation({
+    onSuccess: (user) => {
+      setLoggedCustomer(user);
+      localStorage.setItem(`customer_${slug}`, JSON.stringify(user));
+      setIsAuthModalOpen(false);
+      setCustomer({ name: user.name, phone: user.phone, address: '' });
+      toast.success(`Bem-vindo, ${user.name}!`);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const registerMutation = trpc.customerPortal.register.useMutation({
+    onSuccess: (user) => {
+      setLoggedCustomer(user);
+      localStorage.setItem(`customer_${slug}`, JSON.stringify(user));
+      setIsAuthModalOpen(false);
+      setCustomer({ name: user.name, phone: user.phone, address: '' });
+      toast.success('Cadastro realizado com sucesso!');
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const { data: addressesData, refetch: refetchAddresses } = trpc.customerPortal.listAddresses.useQuery(
+    { customerId: loggedCustomer?.id },
+    { enabled: !!loggedCustomer }
+  );
+
+  useEffect(() => {
+    if (addressesData) {
+      setCustomerAddresses(addressesData);
+      if (addressesData.length > 0 && !selectedAddressId) {
+        setSelectedAddressId(addressesData[0].id);
+      }
+    }
+  }, [addressesData]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`customer_${slug}`);
+    if (saved) {
+      const user = JSON.parse(saved);
+      setLoggedCustomer(user);
+      setCustomer({ name: user.name, phone: user.phone, address: '' });
+    }
+  }, [slug]);
+
+  const handleApplyCoupon = () => {
+    if (!couponCode) return;
+    validateCoupon.mutate({ code: couponCode, restaurantId: menu!.restaurant.id });
+  };
+
+  const addAddressMutation = trpc.customerPortal.addAddress.useMutation({
+    onSuccess: (addr) => {
+      refetchAddresses();
+      setSelectedAddressId(addr.id);
+      setIsAddingAddress(false);
+      setNewAddressForm({ name: '', cep: '', address: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+      toast.success('Endereço adicionado!');
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const handleSaveAddress = () => {
+    if (!newAddressForm.name || !newAddressForm.address || !newAddressForm.neighborhood) {
+      return toast.error('Preencha os campos obrigatórios do endereço.');
+    }
+    addAddressMutation.mutate({
+      customerId: loggedCustomer.id,
+      ...newAddressForm
+    });
+  };
 
   const handleFinishOrder = () => {
     if (!customer.name || !customer.phone) {
@@ -156,9 +278,14 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       restaurantId: menu!.restaurant.id,
       items: cart,
       total: totalPrice,
+      couponId: appliedCoupon?.id,
+      customerId: loggedCustomer?.id,
       customer: {
         ...customer,
-        neighborhood: selectedNeighborhood?.name || ''
+        neighborhood: selectedNeighborhood?.name || '',
+        address: loggedCustomer && selectedAddressId 
+          ? customerAddresses.find(a => a.id === selectedAddressId)?.address 
+          : customer.address
       }
     });
   };
@@ -192,7 +319,37 @@ const PublicMenu = ({ slug }: { slug: string }) => {
             <img src={menu.restaurant.logoUrl || ""} alt="Logo" className="w-full h-full object-contain rounded-xl" />
           </div>
           <div className="flex-1 space-y-2">
-            <h1 className="text-2xl font-bold text-slate-800">{menu.restaurant.name || 'Restaurante'}</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-slate-800">{menu.restaurant.name || 'Restaurante'}</h1>
+              {loggedCustomer ? (
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden md:block">
+                    <div className="text-xs font-bold text-slate-800">{loggedCustomer.name}</div>
+                    <button 
+                      onClick={() => {
+                        localStorage.removeItem(`customer_${slug}`);
+                        setLoggedCustomer(null);
+                        toast.success('Você saiu da sua conta.');
+                      }}
+                      className="text-[10px] text-rose-500 font-bold uppercase tracking-widest"
+                    >
+                      Sair
+                    </button>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
+                    {loggedCustomer.name.charAt(0)}
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all"
+                >
+                  <User size={16} />
+                  Entrar / Cadastrar
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm text-slate-500 font-medium">
               <span className="flex items-center gap-1 text-amber-500"><Star size={16} fill="currentColor" /> 4.8</span>
               <span className="flex items-center gap-1"><Clock size={16} /> 30-45 min</span>
@@ -463,72 +620,240 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                     </div>
 
                     <div className="space-y-6 pt-4 border-t border-slate-100">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                          <User size={12} className="text-primary" /> Seu Nome
-                        </label>
-                        <input 
-                          type="text" 
-                          value={customer.name}
-                          onChange={(e) => setCustomer({...customer, name: e.target.value})}
-                          placeholder="Como quer ser chamado?"
-                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                        />
-                      </div>
+                      {!loggedCustomer && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                              <User size={12} className="text-primary" /> Seu Nome
+                            </label>
+                            <input 
+                              type="text" 
+                              value={customer.name}
+                              onChange={(e) => setCustomer({...customer, name: e.target.value})}
+                              placeholder="Como quer ser chamado?"
+                              className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                            />
+                          </div>
 
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                          <Phone size={12} className="text-primary" /> Seu WhatsApp
-                        </label>
-                        <input 
-                          type="tel" 
-                          value={customer.phone}
-                          onChange={(e) => setCustomer({...customer, phone: e.target.value})}
-                          placeholder="(00) 00000-0000"
-                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                        />
-                      </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                              <Phone size={12} className="text-primary" /> Seu WhatsApp
+                            </label>
+                            <input 
+                              type="tel" 
+                              value={customer.phone}
+                              onChange={(e) => setCustomer({...customer, phone: e.target.value})}
+                              placeholder="(00) 00000-0000"
+                              className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                            />
+                          </div>
+                        </>
+                      )}
 
+                      {loggedCustomer && customerAddresses.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                              <MapPin size={12} className="text-primary" /> Meus Endereços
+                            </label>
+                            <button 
+                              onClick={() => setIsAddingAddress(!isAddingAddress)}
+                              className="text-[10px] font-black text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full"
+                            >
+                              {isAddingAddress ? 'Cancelar' : '+ Novo'}
+                            </button>
+                          </div>
+
+                          {isAddingAddress ? (
+                            <div className="bg-slate-50 p-6 rounded-3xl border border-primary/20 space-y-4 animate-in fade-in slide-in-from-top-4">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-400">Nome do Local (Ex: Casa)</label>
+                                <input 
+                                  type="text" 
+                                  value={newAddressForm.name}
+                                  onChange={(e) => setNewAddressForm({...newAddressForm, name: e.target.value})}
+                                  placeholder="Minha Casa"
+                                  className="w-full p-3 bg-white rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-slate-400">CEP</label>
+                                  <input 
+                                    type="text" 
+                                    value={newAddressForm.cep}
+                                    onChange={(e) => setNewAddressForm({...newAddressForm, cep: e.target.value})}
+                                    placeholder="00000-000"
+                                    className="w-full p-3 bg-white rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-slate-400">Bairro</label>
+                                  <input 
+                                    type="text" 
+                                    value={newAddressForm.neighborhood}
+                                    onChange={(e) => setNewAddressForm({...newAddressForm, neighborhood: e.target.value})}
+                                    placeholder="Centro"
+                                    className="w-full p-3 bg-white rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                  />
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-400">Endereço (Rua)</label>
+                                <input 
+                                  type="text" 
+                                  value={newAddressForm.address}
+                                  onChange={(e) => setNewAddressForm({...newAddressForm, address: e.target.value})}
+                                  placeholder="Av. Principal"
+                                  className="w-full p-3 bg-white rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-slate-400">Número</label>
+                                  <input 
+                                    type="text" 
+                                    value={newAddressForm.number}
+                                    onChange={(e) => setNewAddressForm({...newAddressForm, number: e.target.value})}
+                                    placeholder="123"
+                                    className="w-full p-3 bg-white rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-[10px] font-black text-slate-400">Cidade/UF</label>
+                                  <div className="flex gap-2">
+                                    <input 
+                                      type="text" 
+                                      value={newAddressForm.city}
+                                      onChange={(e) => setNewAddressForm({...newAddressForm, city: e.target.value, state: 'SP'})}
+                                      placeholder="Cidade"
+                                      className="w-full p-3 bg-white rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={handleSaveAddress}
+                                disabled={addAddressMutation.isLoading}
+                                className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-900 transition-all flex items-center justify-center gap-2"
+                              >
+                                {addAddressMutation.isLoading ? 'Salvando...' : 'Salvar Endereço'}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {customerAddresses.map((addr) => (
+                                <button
+                                  key={addr.id}
+                                  onClick={() => setSelectedAddressId(addr.id)}
+                                  className={`w-full p-4 rounded-2xl border transition-all text-left flex items-start gap-3 ${
+                                    selectedAddressId === addr.id
+                                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                    : 'border-slate-100 bg-white shadow-sm'
+                                  }`}
+                                >
+                                  <div className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedAddressId === addr.id ? 'border-primary bg-primary' : 'border-slate-200'}`}>
+                                    {selectedAddressId === addr.id && <CheckCircle2 size={10} className="text-white" />}
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="text-xs font-bold text-slate-800">{addr.name}</div>
+                                    <div className="text-[10px] text-slate-500 line-clamp-1">{addr.address}, {addr.number} - {addr.neighborhood}</div>
+                                  </div>
+                                </button>
+                              ))}
+                              {customerAddresses.length === 0 && (
+                                <div className="py-8 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                                  <Map size={24} className="mx-auto text-slate-200 mb-2" />
+                                  <p className="text-xs text-slate-400 font-medium">Nenhum endereço salvo.</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!loggedCustomer || customerAddresses.length === 0 ? (
+                        <>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                              <MapPin size={12} className="text-primary" /> Bairro de Entrega
+                            </label>
+                            {deliveryConfig?.type === 'neighborhood' ? (
+                              <select 
+                                value={selectedNeighborhood?.name || ''}
+                                onChange={(e) => {
+                                  const nb = (deliveryConfig.neighborhoods || []).find((n: any) => n.name === e.target.value);
+                                  setSelectedNeighborhood(nb);
+                                }}
+                                className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                              >
+                                <option value="">Selecione seu bairro...</option>
+                                {(deliveryConfig.neighborhoods || []).map((nb: any, i: number) => (
+                                  <option key={i} value={nb.name}>{nb.name} (R$ {Number(nb.fee).toFixed(2)})</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <input 
+                                type="text"
+                                placeholder="Seu bairro"
+                                className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                                disabled
+                                value={menu.restaurant.neighborhood || ''}
+                              />
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                              <MapPin size={12} className="text-primary" /> Endereço Completo
+                            </label>
+                            <textarea 
+                              rows={3}
+                              value={customer.address}
+                              onChange={(e) => setCustomer({...customer, address: e.target.value})}
+                              placeholder="Rua, número e complemento..."
+                              className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold resize-none"
+                            />
+                          </div>
+                        </>
+                      ) : null}
+
+                      {/* Coupon Field */}
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                          <MapPin size={12} className="text-primary" /> Bairro de Entrega
+                          <Ticket size={12} className="text-primary" /> Cupom de Desconto
                         </label>
-                        {deliveryConfig?.type === 'neighborhood' ? (
-                          <select 
-                            value={selectedNeighborhood?.name || ''}
-                            onChange={(e) => {
-                              const nb = (deliveryConfig.neighborhoods || []).find((n: any) => n.name === e.target.value);
-                              setSelectedNeighborhood(nb);
-                            }}
-                            className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                          >
-                            <option value="">Selecione seu bairro...</option>
-                            {(deliveryConfig.neighborhoods || []).map((nb: any, i: number) => (
-                              <option key={i} value={nb.name}>{nb.name} (R$ {Number(nb.fee).toFixed(2)})</option>
-                            ))}
-                          </select>
-                        ) : (
+                        <div className="flex gap-2">
                           <input 
-                            type="text"
-                            placeholder="Seu bairro"
-                            className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                            disabled
-                            value={menu.restaurant.neighborhood || ''}
+                            type="text" 
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            placeholder="CUPOM20"
+                            disabled={!!appliedCoupon}
+                            className="flex-1 p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold placeholder:text-slate-300 disabled:opacity-50"
                           />
+                          {appliedCoupon ? (
+                            <button 
+                              onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                              className="px-6 py-4 bg-rose-50 text-rose-500 rounded-2xl font-bold hover:bg-rose-100"
+                            >
+                              Remover
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={handleApplyCoupon}
+                              disabled={!couponCode || validateCoupon.isLoading}
+                              className="px-6 py-4 bg-slate-800 text-white rounded-2xl font-bold hover:bg-slate-900 transition-all disabled:opacity-50"
+                            >
+                              {validateCoupon.isLoading ? '...' : 'Aplicar'}
+                            </button>
+                          )}
+                        </div>
+                        {appliedCoupon && (
+                          <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                            <CheckCircle2 size={10} /> Cupom "{appliedCoupon.code}" aplicado!
+                          </div>
                         )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                          <MapPin size={12} className="text-primary" /> Endereço Completo
-                        </label>
-                        <textarea 
-                          rows={3}
-                          value={customer.address}
-                          onChange={(e) => setCustomer({...customer, address: e.target.value})}
-                          placeholder="Rua, número e complemento..."
-                          className="w-full p-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold resize-none"
-                        />
                       </div>
                     </div>
 
@@ -542,6 +867,12 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                           <span>Taxa de Entrega</span>
                           <span>{deliveryFee === 0 ? 'Grátis' : `R$ ${deliveryFee.toFixed(2).replace('.', ',')}`}</span>
                         </div>
+                        {appliedCoupon && (
+                          <div className="flex justify-between items-center text-emerald-600 font-bold text-xs">
+                            <span>Desconto Cupom</span>
+                            <span>- R$ {couponDiscount.toFixed(2).replace('.', ',')}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between items-center text-slate-800 font-black text-lg pt-2">
                           <span>Total</span>
                           <span className="text-primary">R$ {(Number(totalPrice) || 0).toFixed(2).replace('.', ',')}</span>
@@ -557,6 +888,119 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                     </div>
                   </>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Auth Modal (Login/Register) */}
+      <AnimatePresence>
+        {isAuthModalOpen && (
+          <div className="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-white w-full max-w-md rounded-t-[40px] md:rounded-[40px] overflow-hidden shadow-2xl p-8 space-y-8"
+            >
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <h3 className="text-2xl font-black text-slate-800">
+                    {authMode === 'login' ? 'Bem-vindo de volta!' : 'Criar sua conta'}
+                  </h3>
+                  <p className="text-sm text-slate-500 font-medium">
+                    {authMode === 'login' ? 'Entre para gerenciar seus endereços e pedidos.' : 'Cadastre-se para uma experiência completa.'}
+                  </p>
+                </div>
+                <button onClick={() => setIsAuthModalOpen(false)} className="p-2 bg-slate-50 rounded-full"><X size={20} /></button>
+              </div>
+
+              <div className="space-y-4">
+                {authMode === 'register' && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nome Completo</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input 
+                        type="text" 
+                        value={authForm.name}
+                        onChange={(e) => setAuthForm({...authForm, name: e.target.value})}
+                        placeholder="João Silva"
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">E-mail</label>
+                  <div className="relative">
+                    <Send className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      type="email" 
+                      value={authForm.email}
+                      onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
+                      placeholder="seu@email.com"
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                    />
+                  </div>
+                </div>
+
+                {authMode === 'register' && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">WhatsApp</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                      <input 
+                        type="tel" 
+                        value={authForm.phone}
+                        onChange={(e) => setAuthForm({...authForm, phone: e.target.value})}
+                        placeholder="(00) 00000-0000"
+                        className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Senha</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      type="password" 
+                      value={authForm.password}
+                      onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  if (authMode === 'login') {
+                    loginMutation.mutate({ restaurantId: menu.restaurant.id, email: authForm.email, password: authForm.password });
+                  } else {
+                    registerMutation.mutate({ restaurantId: menu.restaurant.id, ...authForm });
+                  }
+                }}
+                disabled={loginMutation.isLoading || registerMutation.isLoading}
+                className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+              >
+                {loginMutation.isLoading || registerMutation.isLoading ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (
+                  authMode === 'login' ? <>Entrar Agora <Lock size={18} /></> : <>Criar Minha Conta <UserPlus size={18} /></>
+                )}
+              </button>
+
+              <div className="text-center">
+                <button 
+                  onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                  className="text-xs font-bold text-slate-400 hover:text-primary transition-colors"
+                >
+                  {authMode === 'login' ? 'Ainda não tem conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
+                </button>
               </div>
             </motion.div>
           </div>

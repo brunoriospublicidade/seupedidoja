@@ -43,6 +43,8 @@ export const ordersRouter = router({
       restaurantId: z.string(),
       items: z.array(z.any()),
       total: z.number(),
+      couponId: z.string().optional(),
+      customerId: z.string().optional(),
       customer: z.object({
         name: z.string(),
         phone: z.string(),
@@ -51,36 +53,48 @@ export const ordersRouter = router({
       })
     }))
     .mutation(async ({ input }) => {
-      // 1. Create or find customer
-      const [customer] = await db.insert(customers).values({
-        restaurantId: input.restaurantId,
-        name: input.customer.name,
-        phone: input.customer.phone,
-        address: input.customer.address,
-        neighborhood: input.customer.neighborhood,
-      }).onConflictDoUpdate({
-        target: [customers.phone, customers.restaurantId],
-        set: { 
-          name: input.customer.name, 
-          address: input.customer.address,
-          neighborhood: input.customer.neighborhood
-        }
-      }).returning();
+      let customerId = input.customerId;
 
-      // 2. Create order
+      // 1. Create or find customer if not provided
+      if (!customerId) {
+        const [customer] = await db.insert(customers).values({
+          restaurantId: input.restaurantId,
+          name: input.customer.name,
+          phone: input.customer.phone,
+          // Se não estiver logado, não salva senha nem email aqui por enquanto
+        }).onConflictDoUpdate({
+          target: [customers.phone, customers.restaurantId],
+          set: { 
+            name: input.customer.name
+          }
+        }).returning();
+        customerId = customer.id;
+      }
+
+      // 2. Handle Coupon usage
+      if (input.couponId) {
+        const [coupon] = await db.select().from(coupons).where(eq(coupons.id, input.couponId));
+        if (coupon && coupon.active) {
+          await db.update(coupons)
+            .set({ usageCount: (coupon.usageCount || 0) + 1 })
+            .where(eq(coupons.id, coupon.id));
+        }
+      }
+
+      // 3. Create order
       const [order] = await db.insert(orders).values({
         restaurantId: input.restaurantId,
-        customerId: customer.id,
+        customerId: customerId,
         items: input.items,
         total: input.total.toString(),
         status: 'pending'
       }).returning();
 
-      // 3. Notificar o RESTAURANTE (Opcional, mas útil)
+      // 4. Notificar o RESTAURANTE
       try {
+        const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, input.restaurantId));
         const [configRow] = await db.select().from(settings).where(eq(settings.key, 'marketing_config'));
         const config = (configRow?.value as any) || {};
-        const [restaurant] = await db.select().from(restaurants).where(eq(restaurants.id, input.restaurantId));
 
         const apiUrl = config.evolution_url?.replace(/\/$/, '').trim();
         const apiKey = config.evolution_key?.trim();
