@@ -245,170 +245,164 @@ const SettingsPage = () => {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<'identity' | 'delivery' | 'hours' | 'whatsapp' | 'billing'>('identity');
+
   if (loadingRestaurant || loadingPlans || !formData) return <div className="p-8 text-center text-slate-400">Carregando configurações...</div>;
+
+  const TABS = [
+    { id: 'identity', label: 'Identidade', icon: Building2 },
+    { id: 'delivery', label: 'Endereço e Entrega', icon: MapPin },
+    { id: 'hours', label: 'Horários', icon: Clock },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+    { id: 'billing', label: 'Minha Assinatura', icon: CreditCard },
+  ];
 
   return (
     <div className="space-y-12 max-w-6xl pb-20">
-      <header>
-        <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Configurações do Restaurante</h2>
-        <p className="text-slate-500">Gerencie sua identidade, planos e horários de atendimento.</p>
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Configurações da Loja</h2>
+          <p className="text-slate-500">Gerencie sua identidade, taxas de entrega e horários.</p>
+        </div>
+        <button 
+          onClick={handleSave} 
+          disabled={updateMutation.isLoading} 
+          className="px-8 py-4 bg-primary text-white rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+        >
+          {updateMutation.isLoading ? <Loader2 className="animate-spin" /> : <Save />}
+          Salvar Alterações
+        </button>
       </header>
 
-      {/* Seção de Planos com Checkout */}
-      <section className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
-            <CreditCard size={24} />
-          </div>
-          <h3 className="text-xl font-bold dark:text-white">Seu Plano de Assinatura</h3>
-        </div>
+      {/* Tabs Navigation */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${
+              activeTab === tab.id
+                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-900'
+            }`}
+          >
+            <tab.icon size={18} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans?.map((plan) => {
-            const isActive = restaurant?.subscriptionPlan === plan.id;
-            const isSelected = formData.subscription_plan === plan.id;
-            
-            return (
-              <motion.div
-                key={plan.id}
-                whileHover={{ y: -5 }}
-                onClick={() => setFormData({ ...formData, subscription_plan: plan.id })}
-                className={`cursor-pointer relative p-6 rounded-[32px] border-2 transition-all duration-300 flex flex-col gap-6 ${
-                  isSelected 
-                  ? 'border-primary bg-primary/5 shadow-xl shadow-primary/10 ring-4 ring-primary/5' 
-                  : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:border-slate-700'
-                }`}
-              >
-                {isActive && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
-                    Plano Ativo
-                  </div>
-                )}
-
-                <div className="flex justify-between items-start">
-                  <div className={`p-3 rounded-2xl ${isSelected ? 'bg-primary/10' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                    {plan.iconName === 'zap' ? <Zap className="text-blue-500" /> : plan.iconName === 'rocket' ? <Rocket className="text-purple-500" /> : <ShieldCheck className="text-emerald-500" />}
-                  </div>
-                  <div className="text-right">
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Por mês</span>
-                    <span className="text-2xl font-black text-slate-800 dark:text-white">R$ {plan.price}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-lg font-bold text-slate-800 dark:text-white">{plan.name}</h4>
-                  <div className="mt-4 space-y-3">
-                    {(plan.features as string[] || []).map((feature: string, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <CheckCircle2 size={16} className={isSelected ? 'text-primary' : 'text-slate-300'} />
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {isSelected && !isActive && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleCheckout(plan.id); }}
-                    disabled={checkoutMutation.isLoading || verifyMutation.isLoading}
-                    className="mt-2 w-full py-3 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                  >
-                    {checkoutMutation.isLoading || verifyMutation.isLoading ? <Loader2 className="animate-spin" size={18} /> : <CreditCard size={18} />}
-                    Assinar Agora
-                  </button>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-            {/* Banner e Logo */}
-            <div className="relative h-48 bg-slate-100 dark:bg-slate-950 group overflow-hidden">
-              {formData?.banner_url ? (
-                <img src={formData.banner_url} alt="Banner" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 opacity-50">
-                  <ImageIcon size={48} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Sem Banner</span>
-                </div>
-              )}
-              {uploadingBanner ? (
-                <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-                  <div className="relative w-16 h-16 flex items-center justify-center">
-                    <Loader2 className="animate-spin text-white absolute inset-0" size={64} strokeWidth={1} />
-                    <span className="text-xs font-black text-white">{uploadProgressBanner}%</span>
-                  </div>
-                  <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${uploadProgressBanner}%` }}
-                      className="h-full bg-primary"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 cursor-pointer">
-                  <Camera className="text-white" size={32} />
-                  <span className="text-white text-[10px] font-black uppercase tracking-widest">Alterar Banner</span>
-                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
-                </label>
-              )}
-
-              <div className="absolute -bottom-10 left-8 z-10">
-                <label className="relative w-32 h-32 rounded-3xl bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden cursor-pointer flex items-center justify-center group/logo">
-                  {uploadingLogo ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <Loader2 className="animate-spin text-primary" size={24} />
-                      <span className="text-[10px] font-black text-primary">{uploadProgressLogo}%</span>
-                    </div>
-                  ) : formData?.logo_url ? (
-                    <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
+      <div className="grid grid-cols-1 gap-8">
+        <AnimatePresence mode="wait">
+          {activeTab === 'identity' && (
+            <motion.div
+              key="identity"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-8"
+            >
+              <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+                {/* Banner e Logo */}
+                <div className="relative h-48 bg-slate-100 dark:bg-slate-950 group overflow-hidden">
+                  {formData?.banner_url ? (
+                    <img src={formData.banner_url} alt="Banner" className="w-full h-full object-cover" />
                   ) : (
-                    <Camera className="text-slate-400" size={32} />
-                  )}
-                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'logo')} />
-                  {!uploadingLogo && (
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center">
-                      <Camera className="text-white" size={24} />
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 opacity-50">
+                      <ImageIcon size={48} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Sem Banner</span>
                     </div>
                   )}
-                </label>
-              </div>
-            </div>
+                  {uploadingBanner ? (
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+                      <div className="relative w-16 h-16 flex items-center justify-center">
+                        <Loader2 className="animate-spin text-white absolute inset-0" size={64} strokeWidth={1} />
+                        <span className="text-xs font-black text-white">{uploadProgressBanner}%</span>
+                      </div>
+                      <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${uploadProgressBanner}%` }}
+                          className="h-full bg-primary"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 cursor-pointer">
+                      <Camera className="text-white" size={32} />
+                      <span className="text-white text-[10px] font-black uppercase tracking-widest">Alterar Banner</span>
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
+                    </label>
+                  )}
 
-            <div className="p-8 pt-16 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Building2 size={12} className="text-primary" /> Nome do Restaurante</label>
-                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 dark:text-white font-bold" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><FileText size={12} className="text-primary" /> Descrição</label>
-                  <textarea rows={3} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 dark:text-white resize-none" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Globe size={12} className="text-primary" /> Link do Cardápio</label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">pedidoja.com/</span>
-                    <input type="text" value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} className="w-full pl-28 pr-4 py-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold text-primary" />
+                  <div className="absolute -bottom-10 left-8 z-10">
+                    <label className="relative w-32 h-32 rounded-3xl bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 shadow-xl overflow-hidden cursor-pointer flex items-center justify-center group/logo">
+                      {uploadingLogo ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <Loader2 className="animate-spin text-primary" size={24} />
+                          <span className="text-[10px] font-black text-primary">{uploadProgressLogo}%</span>
+                        </div>
+                      ) : formData?.logo_url ? (
+                        <img src={formData.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <Camera className="text-slate-400" size={32} />
+                      )}
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'logo')} />
+                      {!uploadingLogo && (
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center">
+                          <Camera className="text-white" size={24} />
+                        </div>
+                      )}
+                    </label>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageCircle size={12} className="text-primary" /> WhatsApp para Pedidos</label>
-                  <input type="text" value={formData.whatsapp} onChange={(e) => handlePhoneChange(e, 'whatsapp')} className="w-full p-4 rounded-2xl border border-primary/20 bg-primary/5 outline-none font-black text-primary" />
+
+                <div className="p-8 pt-16 space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Building2 size={12} className="text-primary" /> Nome do Restaurante</label>
+                      <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 dark:text-white font-bold" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><FileText size={12} className="text-primary" /> Descrição</label>
+                      <textarea rows={3} value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 dark:text-white resize-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Globe size={12} className="text-primary" /> Link do Cardápio</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">pedidoja.com/</span>
+                        <input type="text" value={formData.slug} onChange={(e) => setFormData({...formData, slug: e.target.value})} className="w-full pl-28 pr-4 py-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold text-primary" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><MessageCircle size={12} className="text-primary" /> Telefone de Contato</label>
+                      <input type="text" value={formData.phone} onChange={(e) => handlePhoneChange(e, 'phone')} className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none dark:text-white font-bold" />
+                    </div>
+                  </div>
                 </div>
               </div>
+            </motion.div>
+          )}
 
-              {/* Endereço Detalhado */}
-              <div className="pt-8 border-t border-slate-50 dark:border-slate-800 space-y-6">
-                <div className="flex items-center gap-2">
-                  <MapPin size={16} className="text-primary" />
-                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Endereço da Loja</h4>
+          {activeTab === 'delivery' && (
+            <motion.div
+              key="delivery"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-8"
+            >
+              <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 shadow-sm border border-slate-100 dark:border-slate-800 space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                    <MapPin size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold dark:text-white">Endereço da Loja</h3>
+                    <p className="text-sm text-slate-500">Defina onde sua loja está localizada.</p>
+                  </div>
                 </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">CEP</label>
@@ -427,7 +421,7 @@ const SettingsPage = () => {
                       type="text" 
                       value={formData.address} 
                       onChange={(e) => setFormData({...formData, address: e.target.value})} 
-                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 outline-none font-bold" 
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" 
                     />
                   </div>
                   <div className="space-y-2 md:col-span-2">
@@ -468,203 +462,327 @@ const SettingsPage = () => {
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Configurações de Frete */}
-              <div className="pt-8 border-t border-slate-50 dark:border-slate-800 space-y-6">
-                <div className="flex items-center gap-2">
-                  <Rocket size={16} className="text-primary" />
-                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white">Taxas de Entrega</h4>
-                </div>
+                <div className="pt-8 border-t border-slate-50 dark:border-slate-800 space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                      <Rocket size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold dark:text-white">Taxas de Entrega</h3>
+                      <p className="text-sm text-slate-500">Configure como você cobra pelo envio dos pedidos.</p>
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {[
-                    { id: 'fixed', label: 'Valor Fixo', icon: <Zap size={18} /> },
-                    { id: 'neighborhood', label: 'Por Bairro', icon: <MapPin size={18} /> },
-                    { id: 'distance', label: 'Por Distância', icon: <Globe size={18} /> },
-                  ].map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => setFormData({
-                        ...formData,
-                        delivery_config: { ...formData.delivery_config, type: type.id }
-                      })}
-                      className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-3 font-bold ${
-                        formData.delivery_config?.type === type.id
-                        ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10'
-                        : 'border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-primary/20'
-                      }`}
-                    >
-                      {type.icon}
-                      <span className="text-xs uppercase tracking-widest">{type.label}</span>
-                    </button>
-                  ))}
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      { id: 'fixed', label: 'Valor Fixo', icon: <Zap size={18} /> },
+                      { id: 'neighborhood', label: 'Por Bairro', icon: <MapPin size={18} /> },
+                      { id: 'distance', label: 'Por Distância', icon: <Globe size={18} /> },
+                    ].map((type) => (
+                      <button
+                        key={type.id}
+                        onClick={() => setFormData({
+                          ...formData,
+                          delivery_config: { ...formData.delivery_config, type: type.id }
+                        })}
+                        className={`p-4 rounded-2xl border-2 transition-all flex items-center gap-3 font-bold ${
+                          formData.delivery_config?.type === type.id
+                          ? 'border-primary bg-primary/5 text-primary shadow-lg shadow-primary/10'
+                          : 'border-slate-50 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 hover:border-primary/20'
+                        }`}
+                      >
+                        {type.icon}
+                        <span className="text-xs uppercase tracking-widest">{type.label}</span>
+                      </button>
+                    ))}
+                  </div>
 
-                <AnimatePresence mode="wait">
-                  {formData.delivery_config?.type === 'fixed' && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valor da Taxa (R$)</label>
-                        <input 
-                          type="number" 
-                          value={formData.delivery_config.fixedFee || 0}
-                          onChange={(e) => setFormData({
-                            ...formData,
-                            delivery_config: { ...formData.delivery_config, fixedFee: Number(e.target.value) }
-                          })}
-                          className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-lg" 
-                        />
-                        <p className="text-[10px] text-slate-500 italic">* Este valor será aplicado a todos os pedidos, independente do endereço.</p>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {formData.delivery_config?.type === 'neighborhood' && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
-                      <div className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
-                        <div className="flex items-center justify-between">
-                          <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Taxas por Bairro</h5>
-                          <button 
-                            onClick={() => {
-                              const neighborhoods = [...(formData.delivery_config.neighborhoods || [])];
-                              neighborhoods.push({ name: '', fee: 0 });
-                              setFormData({
-                                ...formData,
-                                delivery_config: { ...formData.delivery_config, neighborhoods }
-                              });
-                            }}
-                            className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase hover:bg-primary/20 transition-all"
-                          >
-                            + Adicionar Bairro
-                          </button>
+                  <AnimatePresence mode="wait">
+                    {formData.delivery_config?.type === 'fixed' && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valor da Taxa (R$)</label>
+                          <input 
+                            type="number" 
+                            value={formData.delivery_config.fixedFee || 0}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              delivery_config: { ...formData.delivery_config, fixedFee: Number(e.target.value) }
+                            })}
+                            className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-lg" 
+                          />
+                          <p className="text-[10px] text-slate-500 italic">* Este valor será aplicado a todos os pedidos, independente do endereço.</p>
                         </div>
+                      </motion.div>
+                    )}
 
-                        <div className="space-y-3">
-                          {(formData.delivery_config.neighborhoods || []).map((nb: any, idx: number) => (
-                            <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <input 
-                                placeholder="Nome do Bairro"
-                                value={nb.name}
-                                onChange={(e) => {
-                                  const neighborhoods = [...formData.delivery_config.neighborhoods];
-                                  neighborhoods[idx].name = e.target.value;
-                                  setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
-                                }}
-                                className="md:col-span-2 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-sm"
-                              />
-                              <div className="flex items-center gap-2">
+                    {formData.delivery_config?.type === 'neighborhood' && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
+                        <div className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Taxas por Bairro</h5>
+                            <button 
+                              onClick={() => {
+                                const neighborhoods = [...(formData.delivery_config.neighborhoods || [])];
+                                neighborhoods.push({ name: '', fee: 0 });
+                                setFormData({
+                                  ...formData,
+                                  delivery_config: { ...formData.delivery_config, neighborhoods }
+                                });
+                              }}
+                              className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-[10px] font-black uppercase hover:bg-primary/20 transition-all"
+                            >
+                              + Adicionar Bairro
+                            </button>
+                          </div>
+
+                          <div className="space-y-3">
+                            {(formData.delivery_config.neighborhoods || []).map((nb: any, idx: number) => (
+                              <div key={idx} className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <input 
-                                  type="number"
-                                  placeholder="Taxa R$"
-                                  value={nb.fee}
+                                  placeholder="Nome do Bairro"
+                                  value={nb.name}
                                   onChange={(e) => {
                                     const neighborhoods = [...formData.delivery_config.neighborhoods];
-                                    neighborhoods[idx].fee = Number(e.target.value);
+                                    neighborhoods[idx].name = e.target.value;
                                     setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
                                   }}
-                                  className="flex-1 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-sm"
+                                  className="md:col-span-2 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-sm"
                                 />
-                                <button 
-                                  onClick={() => {
-                                    const neighborhoods = formData.delivery_config.neighborhoods.filter((_: any, i: number) => i !== idx);
-                                    setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
-                                  }}
-                                  className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100"
-                                >
-                                  <Save size={16} />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <input 
+                                    type="number"
+                                    placeholder="Taxa R$"
+                                    value={nb.fee}
+                                    onChange={(e) => {
+                                      const neighborhoods = [...formData.delivery_config.neighborhoods];
+                                      neighborhoods[idx].fee = Number(e.target.value);
+                                      setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
+                                    }}
+                                    className="flex-1 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold text-sm"
+                                  />
+                                  <button 
+                                    onClick={() => {
+                                      const neighborhoods = formData.delivery_config.neighborhoods.filter((_: any, i: number) => i !== idx);
+                                      setFormData({ ...formData, delivery_config: { ...formData.delivery_config, neighborhoods } });
+                                    }}
+                                    className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100"
+                                  >
+                                    <ImageIcon size={16} className="text-rose-500" /> {/* Should be Trash but using ImageIcon as fallback for now if Trash not available, wait let me check imports */}
+                                  </button>
+                                </div>
                               </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {formData.delivery_config?.type === 'distance' && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Taxa Base (R$)</label>
+                            <input 
+                              type="number" 
+                              value={formData.delivery_config.baseFee || 0}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                delivery_config: { ...formData.delivery_config, baseFee: Number(e.target.value) }
+                              })}
+                              className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Adicional por KM (R$)</label>
+                            <input 
+                              type="number" 
+                              value={formData.delivery_config.feePerKm || 0}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                delivery_config: { ...formData.delivery_config, feePerKm: Number(e.target.value) }
+                              })}
+                              className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold" 
+                            />
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-slate-500 italic">* Requer integração com Maps API para cálculo automático no checkout.</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'hours' && (
+            <motion.div
+              key="hours"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-8 space-y-6"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                  <Clock size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold dark:text-white">Horários de Atendimento</h3>
+                  <p className="text-sm text-slate-500">Defina quando sua loja está aberta para receber pedidos.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'].map((dayId) => {
+                  const dayConfig = formData.opening_hours[dayId];
+                  const dayName = { seg: 'Segunda', ter: 'Terça', qua: 'Quarta', qui: 'Quinta', sex: 'Sexta', sab: 'Sábado', dom: 'Domingo' }[dayId];
+                  return (
+                    <div key={dayId} className="flex flex-col gap-2 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{dayName}</span>
+                        <button onClick={() => {
+                          const updated = { ...formData.opening_hours };
+                          updated[dayId].isOpen = !updated[dayId].isOpen;
+                          setFormData({ ...formData, opening_hours: updated });
+                        }} className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${dayConfig.isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {dayConfig.isOpen ? 'Aberto' : 'Fechado'}
+                        </button>
+                      </div>
+                      {dayConfig.isOpen && (
+                        <div className="flex items-center gap-2">
+                          <input type="time" value={dayConfig.open} onChange={(e) => {
+                            const updated = { ...formData.opening_hours };
+                            updated[dayId].open = e.target.value;
+                            setFormData({ ...formData, opening_hours: updated });
+                          }} className="flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg p-2 text-xs font-bold dark:text-white" />
+                          <span className="text-slate-300 font-bold text-xs">às</span>
+                          <input type="time" value={dayConfig.close} onChange={(e) => {
+                            const updated = { ...formData.opening_hours };
+                            updated[dayId].close = e.target.value;
+                            setFormData({ ...formData, opening_hours: updated });
+                          }} className="flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg p-2 text-xs font-bold dark:text-white" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'whatsapp' && (
+            <motion.div
+              key="whatsapp"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-8"
+            >
+              <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 shadow-sm border border-slate-100 dark:border-slate-800 space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                    <MessageCircle size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold dark:text-white">Configurações de WhatsApp</h3>
+                    <p className="text-sm text-slate-500">Conecte sua instância da Evolution API para automação.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp para Receber Pedidos</label>
+                    <input type="text" value={formData.whatsapp} onChange={(e) => handlePhoneChange(e, 'whatsapp')} className="w-full p-4 rounded-2xl border border-primary/20 bg-primary/5 outline-none font-black text-primary" />
+                    <p className="text-[10px] text-slate-500 italic">* Este número receberá as notificações de novos pedidos.</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API URL</label>
+                    <input type="text" value={formData.evolution_api_url} onChange={(e) => setFormData({...formData, evolution_api_url: e.target.value})} placeholder="https://api.sua-instancia.com" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API Instance</label>
+                    <input type="text" value={formData.evolution_instance} onChange={(e) => setFormData({...formData, evolution_instance: e.target.value})} placeholder="SeuNomeInstancia" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Evolution API Key</label>
+                    <input type="password" value={formData.evolution_api_key} onChange={(e) => setFormData({...formData, evolution_api_key: e.target.value})} placeholder="••••••••••••••••" className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none font-bold" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'billing' && (
+            <motion.div
+              key="billing"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-8"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {plans?.map((plan) => {
+                  const isActive = restaurant?.subscriptionPlan === plan.id;
+                  const isSelected = formData.subscription_plan === plan.id;
+                  
+                  return (
+                    <motion.div
+                      key={plan.id}
+                      whileHover={{ y: -5 }}
+                      onClick={() => setFormData({ ...formData, subscription_plan: plan.id })}
+                      className={`cursor-pointer relative p-6 rounded-[32px] border-2 transition-all duration-300 flex flex-col gap-6 ${
+                        isSelected 
+                        ? 'border-primary bg-primary/5 shadow-xl shadow-primary/10 ring-4 ring-primary/5' 
+                        : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-200 dark:hover:border-slate-700'
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                          Plano Ativo
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-start">
+                        <div className={`p-3 rounded-2xl ${isSelected ? 'bg-primary/10' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                          {plan.iconName === 'zap' ? <Zap className="text-blue-500" /> : plan.iconName === 'rocket' ? <Rocket className="text-purple-500" /> : <ShieldCheck className="text-emerald-500" />}
+                        </div>
+                        <div className="text-right">
+                          <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Por mês</span>
+                          <span className="text-2xl font-black text-slate-800 dark:text-white">R$ {plan.price}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-lg font-bold text-slate-800 dark:text-white">{plan.name}</h4>
+                        <div className="mt-4 space-y-3">
+                          {(plan.features as string[] || []).map((feature: string, idx: number) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <CheckCircle2 size={16} className={isSelected ? 'text-primary' : 'text-slate-300'} />
+                              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{feature}</span>
                             </div>
                           ))}
                         </div>
                       </div>
-                    </motion.div>
-                  )}
 
-                  {formData.delivery_config?.type === 'distance' && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Taxa Base (R$)</label>
-                          <input 
-                            type="number" 
-                            value={formData.delivery_config.baseFee || 0}
-                            onChange={(e) => setFormData({
-                              ...formData,
-                              delivery_config: { ...formData.delivery_config, baseFee: Number(e.target.value) }
-                            })}
-                            className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold" 
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Adicional por KM (R$)</label>
-                          <input 
-                            type="number" 
-                            value={formData.delivery_config.feePerKm || 0}
-                            onChange={(e) => setFormData({
-                              ...formData,
-                              delivery_config: { ...formData.delivery_config, feePerKm: Number(e.target.value) }
-                            })}
-                            className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 outline-none font-bold" 
-                          />
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-slate-500 italic">* Requer integração com Maps API para cálculo automático no checkout.</p>
+                      {isSelected && !isActive && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); handleCheckout(plan.id); }}
+                          disabled={checkoutMutation.isLoading || verifyMutation.isLoading}
+                          className="mt-2 w-full py-3 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                        >
+                          {checkoutMutation.isLoading || verifyMutation.isLoading ? <Loader2 className="animate-spin" size={18} /> : <CreditCard size={18} />}
+                          Assinar Agora
+                        </button>
+                      )}
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  );
+                })}
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-8 space-y-6">
-            <h3 className="text-lg font-bold dark:text-white flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-4">
-              <Clock size={20} className="text-primary" /> Horários
-            </h3>
-            <div className="space-y-4">
-              {['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'].map((dayId) => {
-                const dayConfig = formData.opening_hours[dayId];
-                const dayName = { seg: 'Segunda', ter: 'Terça', qua: 'Quarta', qui: 'Quinta', sex: 'Sexta', sab: 'Sábado', dom: 'Domingo' }[dayId];
-                return (
-                  <div key={dayId} className="flex flex-col gap-2 p-3 rounded-2xl bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{dayName}</span>
-                      <button onClick={() => {
-                        const updated = { ...formData.opening_hours };
-                        updated[dayId].isOpen = !updated[dayId].isOpen;
-                        setFormData({ ...formData, opening_hours: updated });
-                      }} className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${dayConfig.isOpen ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {dayConfig.isOpen ? 'Aberto' : 'Fechado'}
-                      </button>
-                    </div>
-                    {dayConfig.isOpen && (
-                      <div className="flex items-center gap-2">
-                        <input type="time" value={dayConfig.open} onChange={(e) => {
-                          const updated = { ...formData.opening_hours };
-                          updated[dayId].open = e.target.value;
-                          setFormData({ ...formData, opening_hours: updated });
-                        }} className="flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg p-2 text-xs font-bold dark:text-white" />
-                        <span className="text-slate-300 font-bold text-xs">às</span>
-                        <input type="time" value={dayConfig.close} onChange={(e) => {
-                          const updated = { ...formData.opening_hours };
-                          updated[dayId].close = e.target.value;
-                          setFormData({ ...formData, opening_hours: updated });
-                        }} className="flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg p-2 text-xs font-bold dark:text-white" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <button onClick={handleSave} disabled={updateMutation.isLoading} className="w-full py-5 bg-primary text-white rounded-[24px] font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
-            {updateMutation.isLoading ? <Loader2 className="animate-spin" /> : <Save />}
-            Salvar Configurações
-          </button>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

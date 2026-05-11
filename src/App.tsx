@@ -119,12 +119,13 @@ const Sidebar = () => {
     { id: 'orders', label: 'Pedidos', icon: ShoppingBag, path: '/admin/pedidos', isHighlighted: true },
     { id: 'products', label: 'Produtos', icon: UtensilsCrossed, path: '/admin/produtos' },
     { id: 'categories', label: 'Categorias', icon: ListTree, path: '/admin/categorias' },
-    { id: 'optionals', label: 'Complementos', icon: PlusCircle, path: '/admin/complementos' },
+    { id: 'optionals', label: 'Opcionais', icon: PlusCircle, path: '/admin/complementos' },
     { id: 'coupons', label: 'Cupons', icon: Ticket, path: '/admin/cupons' },
     { id: 'customers', label: 'Clientes', icon: Users, path: '/admin/clientes' },
     { id: 'marketing', label: 'Mala Direta', icon: MessageSquare, path: '/admin/mala-direta' },
     { id: 'reports', label: 'Relatórios', icon: PieChart, path: '/admin/relatorios' },
     { id: 'payments', label: 'Minha Assinatura', icon: CreditCard, path: '/admin/pagamentos' },
+    { id: 'settings', label: 'Configurações', icon: Settings, path: '/admin/configuracoes' },
   ];
 
   const adminItems = [
