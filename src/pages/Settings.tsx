@@ -12,7 +12,8 @@ const SettingsPage = () => {
   const { data: plans, isLoading: loadingPlans } = trpc.plans.list.useQuery();
   
   const updateMutation = trpc.restaurants.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[SERVER RESPONSE]', data);
       utils.restaurants.invalidate();
       toast.success('Configurações salvas com sucesso!');
     },

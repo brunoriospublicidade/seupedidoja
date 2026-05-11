@@ -194,7 +194,10 @@ export const restaurantsRouter = router({
       }
       
       console.log('[UPDATE DEBUG] Result:', !!data);
-      return data;
+      return {
+        ...data,
+        receivedInput: input // Para diagnóstico
+      };
     }),
 
   getPublicMenu: publicProcedure
