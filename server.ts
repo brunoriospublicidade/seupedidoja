@@ -26,6 +26,7 @@ const checkDb = async () => {
     // Migrações manuais de emergência para evitar erros de coluna ausente
     try {
       await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS address TEXT;`);
+      await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
       await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS password TEXT;`);
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS address TEXT;`);
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
