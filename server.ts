@@ -29,6 +29,12 @@ const checkDb = async () => {
       await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS password TEXT;`);
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
       console.log('[LOG] Manual migrations applied successfully');
+
+      // Diagnóstico: Listar colunas reais para ter certeza
+      const customerCols = await db.execute(sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'customers';`);
+      const orderCols = await db.execute(sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'orders';`);
+      console.log('[DIAGNOSTIC] Customers Columns:', customerCols.map((c: any) => c.column_name).join(', '));
+      console.log('[DIAGNOSTIC] Orders Columns:', orderCols.map((c: any) => c.column_name).join(', '));
     } catch (e) {
       console.error('[LOG] Manual migration warning (can be ignored if already exists):', e);
     }
