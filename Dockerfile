@@ -38,5 +38,5 @@ RUN npm install -g tsx
 
 EXPOSE 4001
 
-# Run server and push in background
-CMD ["sh", "-c", "tsx server.ts & npx drizzle-kit push:pg"]
+# Run push and then server
+CMD ["sh", "-c", "npx drizzle-kit push:pg && tsx server.ts"]
