@@ -25,46 +25,52 @@ export const customerPortalRouter = router({
       })
     }))
     .mutation(async ({ input }) => {
-      // Check if email already exists for this restaurant
-      const [existing] = await db.select().from(customers)
-        .where(and(
-          eq(customers.email, input.email),
-          eq(customers.restaurantId, input.restaurantId)
-        ));
+      try {
+        console.log('[REGISTER ATTEMPT] Input:', JSON.stringify(input, null, 2));
+        // Check if email already exists for this restaurant
+        const [existing] = await db.select().from(customers)
+          .where(and(
+            eq(customers.email, input.email),
+            eq(customers.restaurantId, input.restaurantId)
+          ));
 
-      if (existing) {
-        throw new Error('Este e-mail já está cadastrado neste restaurante.');
+        if (existing) {
+          throw new Error('Este e-mail já está cadastrado neste restaurante.');
+        }
+
+        const hashedPassword = await bcrypt.hash(input.password, 10);
+
+        // 1. Create Customer
+        const [customer] = await db.insert(customers)
+          .values({
+            restaurantId: input.restaurantId,
+            name: input.name,
+            email: input.email,
+            phone: input.phone,
+            password: hashedPassword,
+          })
+          .returning();
+
+        // 2. Create Initial Address
+        await db.insert(customerAddresses)
+          .values({
+            customerId: customer.id,
+            name: input.address.name,
+            cep: input.address.cep,
+            address: input.address.address,
+            number: input.address.number,
+            complement: input.address.complement,
+            neighborhood: input.address.neighborhood,
+            city: input.address.city,
+            state: input.address.state
+          });
+
+        const { password: _, ...userWithoutPassword } = customer;
+        return userWithoutPassword;
+      } catch (err: any) {
+        console.error('[REGISTER ERROR]', err);
+        throw new Error('Erro ao realizar cadastro: ' + err.message);
       }
-
-      const hashedPassword = await bcrypt.hash(input.password, 10);
-
-      // 1. Create Customer
-      const [customer] = await db.insert(customers)
-        .values({
-          restaurantId: input.restaurantId,
-          name: input.name,
-          email: input.email,
-          phone: input.phone,
-          password: hashedPassword,
-        })
-        .returning();
-
-      // 2. Create Initial Address
-      await db.insert(customerAddresses)
-        .values({
-          customerId: customer.id,
-          name: input.address.name,
-          cep: input.address.cep,
-          address: input.address.address,
-          number: input.address.number,
-          complement: input.address.complement,
-          neighborhood: input.address.neighborhood,
-          city: input.address.city,
-          state: input.address.state
-        });
-
-      const { password: _, ...userWithoutPassword } = customer;
-      return userWithoutPassword;
     }),
 
   login: publicProcedure
