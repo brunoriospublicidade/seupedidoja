@@ -20,7 +20,7 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=4001
 
 # Create uploads directory
 RUN mkdir -p uploads
@@ -36,7 +36,7 @@ COPY --from=builder /app/drizzle.config.ts ./
 # Install tsx globally just in case, but let's try to run directly
 RUN npm install -g tsx
 
-EXPOSE 3000
+EXPOSE 4001
 
 # Run server and push in background
 CMD ["sh", "-c", "tsx server.ts & npx drizzle-kit push:pg"]

@@ -141,7 +141,7 @@ app.use((req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4001;
 app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`Server listening on http://0.0.0.0:${PORT}`);
 });
