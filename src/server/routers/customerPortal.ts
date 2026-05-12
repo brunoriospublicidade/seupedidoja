@@ -48,6 +48,8 @@ export const customerPortalRouter = router({
             email: input.email,
             phone: input.phone,
             password: hashedPassword,
+            address: '',
+            neighborhood: input.address.neighborhood || '',
           })
           .returning();
 
