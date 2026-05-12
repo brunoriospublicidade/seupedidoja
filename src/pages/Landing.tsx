@@ -54,9 +54,12 @@ const LandingPage = () => {
                 {item.label}
               </a>
             ))}
-            <a href="https://painel.seupedidoja.com.br/cadastro" className="bg-primary text-white px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+            <Link href="/login" className="text-sm font-bold text-slate-500 hover:text-primary transition-colors uppercase tracking-widest">
+              Entrar
+            </Link>
+            <Link href="/cadastro" className="bg-primary text-white px-8 py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
               Começar Grátis
-            </a>
+            </Link>
           </div>
 
           {/* Mobile Toggle */}
@@ -80,9 +83,12 @@ const LandingPage = () => {
                     {item.label}
                   </a>
                 ))}
-                <a href="https://painel.seupedidoja.com.br/cadastro" className="bg-primary text-white py-4 rounded-2xl text-center font-black uppercase tracking-widest">
-                  Criar Conta
-                </a>
+                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="text-lg font-black text-slate-800 uppercase tracking-widest">
+                  Entrar
+                </Link>
+                <Link href="/cadastro" onClick={() => setIsMenuOpen(false)} className="bg-primary text-white py-4 rounded-2xl text-center font-black uppercase tracking-widest">
+                  Começar Grátis
+                </Link>
               </div>
             </motion.div>
           )}
@@ -111,12 +117,15 @@ const LandingPage = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <a href="https://painel.seupedidoja.com.br/cadastro" className="w-full sm:w-auto px-10 py-5 bg-primary text-white rounded-[24px] font-black text-lg uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+              <Link href="/cadastro" className="w-full sm:w-auto px-10 py-5 bg-primary text-white rounded-[24px] font-black text-lg uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
                 Quero Testar Grátis <ChevronRight />
-              </a>
-              <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
-                <CheckCircle2 className="text-emerald-500" /> Sem cartão de crédito
-              </div>
+              </Link>
+              <Link href="/login" className="w-full sm:w-auto px-10 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-[24px] font-black text-lg uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-3">
+                Entrar
+              </Link>
+            </div>
+            <div className="flex items-center gap-2 text-slate-400 font-bold text-sm">
+              <CheckCircle2 className="text-emerald-500" /> Sem cartão de crédito
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-8">
@@ -344,12 +353,12 @@ const LandingPage = () => {
                 </div>
              </div>
 
-             <div className="pt-8 border-t border-slate-100 flex flex-col items-center gap-6">
-                <a href="https://painel.seupedidoja.com.br/cadastro" className="w-full sm:w-auto px-16 py-6 bg-primary text-white rounded-[24px] font-black text-xl uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all">
-                   Quero Testar Grátis
-                </a>
+              <div className="pt-8 border-t border-slate-100 flex flex-col items-center gap-6">
+                <Link href="/cadastro" className="w-full sm:w-auto px-16 py-6 bg-primary text-white rounded-[24px] font-black text-xl uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all">
+                  Quero Testar Grátis
+                </Link>
                 <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">Cancele quando quiser • 7 dias grátis</span>
-             </div>
+              </div>
           </div>
         </div>
       </section>
@@ -438,9 +447,9 @@ const LandingPage = () => {
 
             <div className="space-y-6">
                <h5 className="font-black text-sm uppercase tracking-[0.2em] text-primary">Comece Agora</h5>
-               <a href="https://painel.seupedidoja.com.br/cadastro" className="inline-block px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+               <Link href="/cadastro" className="inline-block px-8 py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
                   Testar Grátis
-               </a>
+               </Link>
             </div>
           </div>
 

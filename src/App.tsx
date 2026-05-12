@@ -30,6 +30,7 @@ import { trpc } from './lib/trpc';
 // Pages
 import LandingPage from './pages/Landing';
 import RegisterPage from './pages/Register';
+import LoginPage from './pages/Login';
 import DashboardPage from './pages/Dashboard';
 import CategoriesPage from './pages/Categories';
 import OptionalsPage from './pages/Optionals';
@@ -326,6 +327,7 @@ const App = () => {
         <Switch>
           <Route path="/" component={LandingPage} />
           <Route path="/cadastro" component={RegisterPage} />
+          <Route path="/login" component={LoginPage} />
           <Route path="/menu/:slug">
             {(params) => <PublicMenu slug={params.slug} />}
           </Route>

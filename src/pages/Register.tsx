@@ -36,7 +36,6 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isCepLoading, setIsCepLoading] = useState(false);
   const [step, setStep] = useState(1);
-  const [isLogin, setIsLogin] = useState(false);
   
   const [formData, setFormData] = useState({
     restaurantName: '',
@@ -53,8 +52,8 @@ const RegisterPage = () => {
     password: ''
   });
 
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+    password: ''
+  });
 
   const registerMutation = trpc.restaurants.create.useMutation({
     onSuccess: (data) => {
@@ -73,7 +72,7 @@ const RegisterPage = () => {
           description: 'Já existe um cadastro com este contato. Tente fazer o login.',
           action: {
             label: 'Fazer Login',
-            onClick: () => setIsLogin(true)
+            onClick: () => setLocation('/login')
           }
         });
       } else {
@@ -156,52 +155,8 @@ const RegisterPage = () => {
     }
   }, [activeId, setLocation]);
 
-  const handleLogin = () => {
-    if (!loginEmail || !loginPassword) {
-      return toast.error('Preencha e-mail e senha');
-    }
-
-    setIsLoading(true);
-    console.log('Tentando login para:', loginEmail);
-    
-    // Simulação de login real para o MVP
-    setTimeout(() => {
-      const searchTerms = loginEmail.toLowerCase();
-      
-      const restaurant = allRestaurants?.find(r => {
-        const emailInDesc = r.description?.toLowerCase().includes(`email: ${searchTerms}`);
-        const phoneMatch = r.phone?.replace(/\D/g, '') === searchTerms.replace(/\D/g, '');
-        return emailInDesc || phoneMatch;
-      });
-      
-      if (restaurant) {
-        console.log('Loja localizada:', restaurant.name);
-        // Garantimos o localStorage primeiro
-        localStorage.setItem('restaurant_id', restaurant.id);
-        login(restaurant.id);
-        
-        toast.success(`Bem-vindo de volta, ${restaurant.name}!`, {
-          description: 'Acesso autorizado com sucesso.'
-        });
-        
-        // Pequeno delay para garantir que o estado do App foi atualizado
-        setTimeout(() => setLocation('/admin'), 200);
-      } else {
-        console.warn('Loja não encontrada para:', loginEmail);
-        toast.error('Conta não localizada', {
-          description: 'Não encontramos nenhuma loja vinculada a este e-mail ou telefone.'
-        });
-        setIsLoading(false);
-      }
-    }, 800);
-  };
-
   const handleNext = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (isLogin) {
-      handleLogin();
-      return;
-    }
     if (step === 1 && !formData.restaurantName) return toast.error('Digite o nome do seu negócio');
     if (step === 2 && !formData.foodType) return toast.error('Selecione o tipo do seu negócio');
     if (step === 3 && (!formData.cep || !formData.address || !formData.number)) return toast.error('Preencha os dados obrigatórios do endereço');
@@ -225,7 +180,7 @@ const RegisterPage = () => {
             </Link>
 
             <h2 className="text-5xl font-black leading-tight mb-8">
-              {isLogin ? 'Bom te ver \nde novo!' : 'Comece a vender \nonline hoje mesmo.'}
+              Comece a vender <br /> online hoje mesmo.
             </h2>
 
             <div className="space-y-6">
@@ -270,15 +225,11 @@ const RegisterPage = () => {
               </div>
             )}
             <h3 className="text-3xl font-black text-slate-900">
-              {isLogin ? 'Acesse sua conta' : (
-                <>
-                  {step === 1 && 'Qual o nome do seu negócio?'}
-                  {step === 2 && 'O que você vende?'}
-                  {step === 3 && 'Onde fica seu restaurante?'}
-                  {step === 4 && 'Como podemos te contatar?'}
-                  {step === 5 && 'Crie sua senha de acesso'}
-                </>
-              )}
+              {step === 1 && 'Qual o nome do seu negócio?'}
+              {step === 2 && 'O que você vende?'}
+              {step === 3 && 'Onde fica seu restaurante?'}
+              {step === 4 && 'Como podemos te contatar?'}
+              {step === 5 && 'Crie sua senha de acesso'}
             </h3>
           </div>
 
@@ -513,20 +464,16 @@ const RegisterPage = () => {
 
             <button 
               type="submit" 
-              disabled={isLoading || (!isLogin && step === 2 && !formData.foodType) || isCepLoading}
+              disabled={isLoading || (step === 2 && !formData.foodType) || isCepLoading}
               className="w-full py-5 bg-primary text-white rounded-[24px] font-black text-lg uppercase tracking-widest shadow-2xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
             >
-              {isLoading ? <Loader2 className="animate-spin" size={24} /> : (isLogin ? 'Entrar no Painel' : (step === 5 ? 'Finalizar Cadastro' : 'Continuar'))}
+              {isLoading ? <Loader2 className="animate-spin" size={24} /> : (step === 5 ? 'Finalizar Cadastro' : 'Continuar')}
               {!isLoading && <ArrowRight size={20} />}
             </button>
             
             <div className="text-center pt-4">
                <p className="text-sm font-bold text-slate-400">
-                  {isLogin ? (
-                    <>Ainda não tem conta? <button type="button" onClick={() => setIsLogin(false)} className="text-primary hover:underline">Crie agora</button></>
-                  ) : (
-                    <>Já tem uma conta? <button type="button" onClick={() => setIsLogin(true)} className="text-primary hover:underline">Acesse o painel</button></>
-                  )}
+                  Já tem uma conta? <Link href="/login" className="text-primary hover:underline">Acesse o painel</Link>
                </p>
             </div>
           </form>
