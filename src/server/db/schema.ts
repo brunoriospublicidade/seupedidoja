@@ -119,8 +119,8 @@ export const orders = pgTable('orders', {
   customerId: uuid('customer_id').references(() => customers.id),
   items: jsonb('items').notNull(),
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
-  address: text('address'),
-  neighborhood: text('neighborhood'),
+  address: text('address'), // Added to store order delivery address
+  neighborhood: text('neighborhood'), // Added to store order delivery neighborhood
   status: text('status').default('pending'),
   createdAt: timestamp('created_at').defaultNow(),
 });

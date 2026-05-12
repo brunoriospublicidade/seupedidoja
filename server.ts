@@ -27,6 +27,7 @@ const checkDb = async () => {
     try {
       await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS address TEXT;`);
       await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS password TEXT;`);
+      await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS address TEXT;`);
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
       console.log('[LOG] Manual migrations applied successfully');
 
