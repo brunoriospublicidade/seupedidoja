@@ -52,9 +52,6 @@ const RegisterPage = () => {
     password: ''
   });
 
-    password: ''
-  });
-
   const registerMutation = trpc.restaurants.create.useMutation({
     onSuccess: (data) => {
       console.log('Cadastro realizado com sucesso, ID:', data.id);
@@ -214,16 +211,14 @@ const RegisterPage = () => {
         {/* Lado Direito - Formulário */}
         <div className="p-8 md:p-16 flex flex-col justify-center bg-white dark:bg-white">
           <div className="mb-10">
-            {!isLogin && (
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-black uppercase tracking-widest text-primary">Passo {step} de 5</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <div key={i} className={`h-1 rounded-full transition-all ${i <= step ? 'w-6 bg-primary' : 'w-3 bg-slate-100'}`} />
-                  ))}
-                </div>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Passo {step} de 5</span>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className={`h-1 rounded-full transition-all ${i <= step ? 'w-6 bg-primary' : 'w-3 bg-slate-100'}`} />
+                ))}
               </div>
-            )}
+            </div>
             <h3 className="text-3xl font-black text-slate-900">
               {step === 1 && 'Qual o nome do seu negócio?'}
               {step === 2 && 'O que você vende?'}
@@ -234,39 +229,8 @@ const RegisterPage = () => {
           </div>
 
           <form onSubmit={handleNext} className="space-y-6">
-            {isLogin ? (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">E-mail de Acesso</label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Mail size={20} /></div>
-                    <input 
-                      autoFocus
-                      type="email" 
-                      placeholder="seu@email.com"
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-primary/20 outline-none transition-all font-bold text-lg"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Sua Senha</label>
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"><Lock size={20} /></div>
-                    <input 
-                      type="password" 
-                      placeholder="••••••••"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full pl-12 pr-4 py-5 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-primary/20 outline-none transition-all font-bold text-lg"
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <>
-                {step === 1 && (
+            <>
+              {step === 1 && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Nome do Restaurante / Lanchonete</label>
                     <div className="relative">
@@ -460,7 +424,7 @@ const RegisterPage = () => {
                   </motion.div>
                 )}
               </>
-            )}
+            
 
             <button 
               type="submit" 
