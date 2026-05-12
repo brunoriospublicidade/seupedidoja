@@ -3,30 +3,22 @@ import { router, publicProcedure } from '../trpc';
 import { db } from '../db';
 import { customers, customerAddresses } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 
 export const customerPortalRouter = router({
   register: publicProcedure
     .input(z.object({
       restaurantId: z.string(),
-      name: z.string().min(3),
-      email: z.string().email(),
-      phone: z.string().min(10),
-      password: z.string().min(6),
-      address: z.object({
-        name: z.string().default('Meu Endereço'),
-        cep: z.string(),
-        address: z.string(),
-        number: z.string(),
-        complement: z.string().optional(),
-        neighborhood: z.string(),
-        city: z.string(),
-        state: z.string()
-      })
+      name: z.string(),
+      email: z.string(),
+      phone: z.string(),
+      password: z.string(),
+      address: z.any().optional()
     }))
     .mutation(async ({ input }) => {
       try {
-        console.log('[REGISTER ATTEMPT] Input:', JSON.stringify(input, null, 2));
+        console.log('[REGISTER ATTEMPT]', { email: input.email, restaurantId: input.restaurantId });
+        
         // Check if email already exists for this restaurant
         const [existing] = await db.select().from(customers)
           .where(and(
@@ -35,7 +27,7 @@ export const customerPortalRouter = router({
           ));
 
         if (existing) {
-          throw new Error('Este e-mail já está cadastrado neste restaurante.');
+          throw new Error('Este e-mail já está cadastrado.');
         }
 
         const hashedPassword = await bcrypt.hash(input.password, 10);
@@ -48,57 +40,69 @@ export const customerPortalRouter = router({
             email: input.email,
             phone: input.phone,
             password: hashedPassword,
-            address: '',
-            neighborhood: input.address.neighborhood || '',
           })
           .returning();
 
-        // 2. Create Initial Address
-        await db.insert(customerAddresses)
-          .values({
-            customerId: customer.id,
-            name: input.address.name,
-            cep: input.address.cep,
-            address: input.address.address,
-            number: input.address.number,
-            complement: input.address.complement,
-            neighborhood: input.address.neighborhood,
-            city: input.address.city,
-            state: input.address.state
-          });
+        // 2. Create Initial Address if provided
+        if (input.address && typeof input.address === 'object') {
+          try {
+            await db.insert(customerAddresses)
+              .values({
+                customerId: customer.id,
+                name: input.address.name || 'Principal',
+                cep: input.address.cep || '',
+                address: input.address.address || '',
+                number: input.address.number || '',
+                complement: input.address.complement || '',
+                neighborhood: input.address.neighborhood || '',
+                city: input.address.city || '',
+                state: input.address.state || 'SP'
+              });
+          } catch (addrErr) {
+            console.error('[REGISTER ADDRESS ERROR]', addrErr);
+            // Don't fail the whole registration if address fail
+          }
+        }
 
         const { password: _, ...userWithoutPassword } = customer;
         return userWithoutPassword;
       } catch (err: any) {
-        console.error('[REGISTER ERROR]', err);
-        throw new Error('Erro ao realizar cadastro: ' + err.message);
+        console.error('[REGISTER CRITICAL ERROR]', err);
+        throw new Error(err.message || 'Erro interno no servidor');
       }
     }),
 
   login: publicProcedure
     .input(z.object({
       restaurantId: z.string(),
-      email: z.string().email(),
+      email: z.string(),
       password: z.string()
     }))
     .mutation(async ({ input }) => {
-      const [customer] = await db.select().from(customers)
-        .where(and(
-          eq(customers.email, input.email),
-          eq(customers.restaurantId, input.restaurantId)
-        ));
+      try {
+        console.log('[LOGIN ATTEMPT]', { email: input.email, restaurantId: input.restaurantId });
+        
+        const [customer] = await db.select().from(customers)
+          .where(and(
+            eq(customers.email, input.email),
+            eq(customers.restaurantId, input.restaurantId)
+          ));
 
-      if (!customer || !customer.password) {
-        throw new Error('E-mail ou senha incorretos.');
+        if (!customer || !customer.password) {
+          throw new Error('E-mail ou senha incorretos.');
+        }
+
+        const validPassword = await bcrypt.compare(input.password, customer.password);
+        if (!validPassword) {
+          throw new Error('E-mail ou senha incorretos.');
+        }
+
+        const { password: _, ...userWithoutPassword } = customer;
+        return userWithoutPassword;
+      } catch (err: any) {
+        console.error('[LOGIN CRITICAL ERROR]', err);
+        throw new Error(err.message || 'Erro interno no servidor');
       }
-
-      const validPassword = await bcrypt.compare(input.password, customer.password);
-      if (!validPassword) {
-        throw new Error('E-mail ou senha incorretos.');
-      }
-
-      const { password: _, ...userWithoutPassword } = customer;
-      return userWithoutPassword;
     }),
 
   getProfile: publicProcedure
