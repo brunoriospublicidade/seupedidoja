@@ -165,8 +165,13 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const isProductValid = useMemo(() => {
     if (!activeProduct) return false;
-    const productOptionals = Array.isArray(activeProduct?.optionals) ? activeProduct.optionals : [];
+    const productOptionals = (Array.isArray(activeProduct?.optionals) ? activeProduct.optionals : [])
+      .map((opt: any) => typeof opt === 'string' ? opt : opt?.id)
+      .filter(Boolean);
+      
     const groups = (menu?.optionalGroups || []).filter((g: any) => productOptionals.includes(g.id)) || [];
+    if (groups.length === 0) return true;
+    
     return groups.every(isOptionalGroupValid);
   }, [activeProduct, selectedOptionals, menu]);
 
@@ -514,7 +519,13 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                           <h4 className="font-bold text-slate-800 flex items-center gap-2">
                             {group.name}
                             {group.isMandatory && (
-                              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-black uppercase rounded">Obrigatório</span>
+                              <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded transition-colors ${
+                                (selectedOptionals[group.id] || []).length > 0 
+                                ? 'bg-emerald-100 text-emerald-600' 
+                                : 'bg-rose-100 text-rose-600 animate-pulse'
+                              }`}>
+                                { (selectedOptionals[group.id] || []).length > 0 ? 'Preenchido' : 'Obrigatório' }
+                              </span>
                             )}
                           </h4>
                           <p className="text-xs text-slate-400">Escolha até {group.maxSelection} {group.maxSelection === 1 ? 'opção' : 'opções'}.</p>
@@ -534,6 +545,8 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                               className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
                                 isSelected 
                                 ? 'border-primary bg-primary/5 text-primary' 
+                                : group.isMandatory && (selectedOptionals[group.id] || []).length === 0
+                                ? 'border-rose-200 bg-white text-slate-600 hover:border-rose-300'
                                 : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
                               }`}
                             >
@@ -565,7 +578,10 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                   {isProductValid ? (
                     <>Adicionar <span className="opacity-60">•</span> R$ {currentModalPrice.toFixed(2).replace('.', ',')}</>
                   ) : (
-                    'Selecione os itens obrigatórios'
+                    <div className="flex flex-col items-center">
+                      <span className="text-sm">Selecione os itens obrigatórios</span>
+                      <span className="text-[10px] opacity-70 uppercase tracking-widest">Confira as opções marcadas em vermelho</span>
+                    </div>
                   )}
                 </button>
               </div>
@@ -1044,65 +1060,6 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                       </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-100">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4">Endereço de Entrega</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">CEP</label>
-                          <input 
-                            type="text" 
-                            value={authForm.address.cep}
-                            onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, cep: e.target.value}})}
-                            placeholder="00000-000"
-                            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Bairro</label>
-                          <input 
-                            type="text" 
-                            value={authForm.address.neighborhood}
-                            onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, neighborhood: e.target.value}})}
-                            placeholder="Centro"
-                            className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4 space-y-4">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Rua / Endereço</label>
-                          <input 
-                            type="text" 
-                            value={authForm.address.address}
-                            onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, address: e.target.value}})}
-                            placeholder="Av. Brasil"
-                            className="w-full px-4 py-4 bg-slate-50 rounded-2xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Número</label>
-                            <input 
-                              type="text" 
-                              value={authForm.address.number}
-                              onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, number: e.target.value}})}
-                              placeholder="123"
-                              className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Cidade</label>
-                            <input 
-                              type="text" 
-                              value={authForm.address.city}
-                              onChange={(e) => setAuthForm({...authForm, address: {...authForm.address, city: e.target.value}})}
-                              placeholder="São Paulo"
-                              className="w-full px-4 py-3 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 font-bold text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                   </>
                 )}
 
