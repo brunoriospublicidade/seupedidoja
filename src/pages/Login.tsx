@@ -44,9 +44,14 @@ const LoginPage = () => {
       const searchTerms = email.toLowerCase();
       
       const restaurant = allRestaurants?.find(r => {
-        const emailInDesc = r.description?.toLowerCase().includes(`email: ${searchTerms}`);
-        const phoneMatch = r.phone?.replace(/\D/g, '') === searchTerms.replace(/\D/g, '');
-        return emailInDesc || phoneMatch;
+        const emailMatch = r.email?.toLowerCase() === email.toLowerCase();
+        const phoneMatch = r.phone?.replace(/\D/g, '') === email.replace(/\D/g, '');
+        const passMatch = r.password === password;
+        
+        // Mantém compatibilidade com o mock antigo se a senha no banco estiver vazia
+        const isLegacyMatch = !r.password && (r.description?.toLowerCase().includes(`email: ${email.toLowerCase()}`) || phoneMatch);
+
+        return (emailMatch || phoneMatch) && (passMatch || isLegacyMatch);
       });
       
       if (restaurant) {
@@ -56,8 +61,8 @@ const LoginPage = () => {
         toast.success(`Bem-vindo de volta, ${restaurant.name}!`);
         setTimeout(() => setLocation('/admin'), 200);
       } else {
-        toast.error('Conta não localizada', {
-          description: 'Não encontramos nenhuma loja vinculada a este e-mail ou telefone.'
+        toast.error('Credenciais inválidas', {
+          description: 'E-mail ou senha incorretos. Verifique seus dados e tente novamente.'
         });
         setIsLoading(false);
       }

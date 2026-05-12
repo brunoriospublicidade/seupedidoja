@@ -145,6 +145,8 @@ export const restaurantsRouter = router({
       evolution_instance: z.string().optional(),
       role: z.string().optional(),
       delivery_config: z.any().optional(),
+      email: z.string().optional(),
+      password: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
@@ -179,6 +181,8 @@ export const restaurantsRouter = router({
       if (input.evolution_instance !== undefined) mappedData.evolutionInstance = input.evolution_instance;
       if (input.role !== undefined) mappedData.role = input.role;
       if (input.delivery_config !== undefined) mappedData.deliveryConfig = input.delivery_config;
+      if (input.email !== undefined) mappedData.email = input.email;
+      if (input.password !== undefined) mappedData.password = input.password;
       
       console.log('[UPDATE DEBUG] Restaurant ID:', targetId);
       console.log('[UPDATE DEBUG] Mapped Data:', mappedData);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
-import { Save, Building2, MessageCircle, Clock, Camera, Loader2, Globe, FileText, CreditCard, CheckCircle2, ShieldCheck, Zap, Rocket, Image as ImageIcon, PartyPopper, MapPin } from 'lucide-react';
+import { Save, Building2, MessageCircle, Clock, Camera, Loader2, Globe, FileText, CreditCard, CheckCircle2, ShieldCheck, Zap, Rocket, Image as ImageIcon, PartyPopper, MapPin, Mail, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trpc } from '../lib/trpc';
@@ -126,7 +126,9 @@ const SettingsPage = () => {
         complement: restaurant.complement || '',
         neighborhood: restaurant.neighborhood || '',
         city: restaurant.city || '',
-        state: restaurant.state || ''
+        state: restaurant.state || '',
+        email: restaurant.email || '',
+        password: restaurant.password || ''
       });
     }
   }, [restaurant, formData]);
@@ -199,7 +201,9 @@ const SettingsPage = () => {
       neighborhood: formData.neighborhood,
       city: formData.city,
       state: formData.state,
-      delivery_config: formData.delivery_config
+      delivery_config: formData.delivery_config,
+      email: formData.email,
+      password: formData.password
     });
   };
 
@@ -247,7 +251,7 @@ const SettingsPage = () => {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'identity' | 'delivery' | 'hours' | 'whatsapp' | 'billing'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'delivery' | 'hours' | 'whatsapp' | 'billing' | 'security'>('identity');
 
   if (loadingRestaurant || loadingPlans || !formData) return <div className="p-8 text-center text-slate-400">Carregando configurações...</div>;
 
@@ -256,6 +260,7 @@ const SettingsPage = () => {
     { id: 'delivery', label: 'Endereço e Entrega', icon: MapPin },
     { id: 'hours', label: 'Horários', icon: Clock },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+    { id: 'security', label: 'Segurança', icon: ShieldCheck },
     { id: 'billing', label: 'Minha Assinatura', icon: CreditCard },
   ];
 
@@ -715,6 +720,62 @@ const SettingsPage = () => {
                       </div>
                     </>
                   )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'security' && (
+            <motion.div
+              key="security"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-8"
+            >
+              <div className="bg-white dark:bg-slate-900 rounded-[32px] p-8 shadow-sm border border-slate-100 dark:border-slate-800 space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+                    <ShieldCheck size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold dark:text-white">Segurança e Acesso</h3>
+                    <p className="text-sm text-slate-500">Gerencie suas credenciais de acesso ao painel.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Mail size={12} className="text-primary" /> E-mail de Acesso</label>
+                    <input 
+                      type="email" 
+                      value={formData.email} 
+                      onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 dark:text-white font-bold" 
+                    />
+                    <p className="text-[10px] text-slate-500 italic">* Este e-mail é usado para login no painel administrativo.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Lock size={12} className="text-primary" /> Nova Senha</label>
+                    <input 
+                      type="password" 
+                      value={formData.password} 
+                      onChange={(e) => setFormData({...formData, password: e.target.value})} 
+                      placeholder="••••••••"
+                      className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 dark:text-white font-bold" 
+                    />
+                    <p className="text-[10px] text-slate-500 italic">* Deixe como está se não desejar alterar sua senha atual.</p>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-amber-50 dark:bg-amber-950/20 rounded-3xl border border-amber-100 dark:border-amber-900/30 flex gap-4">
+                   <Zap size={24} className="text-amber-500 shrink-0" />
+                   <div className="space-y-1">
+                      <p className="text-sm font-bold text-amber-800 dark:text-amber-200">Dica de Segurança</p>
+                      <p className="text-xs text-amber-700/70 dark:text-amber-300/70 leading-relaxed">
+                         Recomendamos o uso de senhas fortes com pelo menos 8 caracteres, incluindo letras, números e símbolos.
+                      </p>
+                   </div>
                 </div>
               </div>
             </motion.div>
