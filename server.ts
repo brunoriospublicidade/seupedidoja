@@ -112,6 +112,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   const protocol = req.headers['x-forwarded-proto'] || req.protocol;
   const host = req.headers.host;
   const publicUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+  console.log(`[LOG] File uploaded successfully: ${req.file.filename} -> ${publicUrl} (Path: ${req.file.path})`);
   res.json({ url: publicUrl });
 });
 
@@ -135,11 +136,20 @@ if (fs.existsSync(path.join(distPath, 'index.html'))) {
 app.use(express.static(distPath));
 
 // Handle React routing, return all requests to React app
-app.use((req, res) => {
-  if (req.url.startsWith('/trpc')) return;
-  if (req.url.startsWith('/api/upload')) return;
-  if (req.url.startsWith('/uploads')) return;
-  res.sendFile(path.join(distPath, 'index.html'));
+app.use((req, res, next) => {
+  // Se for uma rota de API ou uploads que chegou aqui, é porque não foi encontrada
+  if (req.url.startsWith('/trpc') || req.url.startsWith('/api/upload') || req.url.startsWith('/uploads')) {
+    console.log(`[LOG] 404 on protected route: ${req.url}`);
+    return res.status(404).send('Not Found');
+  }
+  
+  // Para todas as outras rotas, envia o index.html (React Router)
+  const indexPath = path.join(distPath, 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Frontend not built or index.html missing');
+  }
 });
 
 const PORT = process.env.PORT || 4001;
