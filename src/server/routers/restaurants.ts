@@ -1,4 +1,5 @@
 import { router, publicProcedure } from '../trpc';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { db } from '../db';
 import { restaurants, categories, products, optionalGroups, optionalItems, settings, orders } from '../db/schema';
@@ -49,46 +50,73 @@ export const restaurantsRouter = router({
       password: z.string(),
     }))
     .mutation(async ({ input }) => {
+      const { email, password } = input;
+      console.log('[LOGIN DEBUG] Tentativa de login para:', email);
+      
       try {
-        const { email, password } = input;
-        
         // Busca por email ou telefone
-        const [restaurant] = await db.select()
+        const allMatches = await db.select()
           .from(restaurants)
           .where(or(eq(restaurants.email, email), eq(restaurants.phone, email)));
+        
+        console.log('[LOGIN DEBUG] Lojas encontradas:', allMatches.length);
+        const restaurant = allMatches[0];
 
         if (!restaurant) {
-          throw new Error('Credenciais inválidas');
+          console.log('[LOGIN DEBUG] Restaurante não encontrado');
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'E-mail ou telefone não cadastrado.'
+          });
         }
 
         // Se não tiver senha (legado), tenta o match pelo description ou se a senha for vazia
         if (!restaurant.password) {
+          console.log('[LOGIN DEBUG] Restaurante sem senha (legado)');
           const phoneMatch = restaurant.phone?.replace(/\D/g, '') === email.replace(/\D/g, '');
           const isLegacyMatch = restaurant.description?.toLowerCase().includes(`email: ${email.toLowerCase()}`) || phoneMatch;
           
           if (isLegacyMatch) {
+            console.log('[LOGIN DEBUG] Login legado autorizado');
             return {
               id: restaurant.id,
               name: restaurant.name,
               role: restaurant.role
             };
           }
-          throw new Error('Credenciais inválidas');
+          
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Credenciais inválidas para conta legada.'
+          });
         }
 
+        console.log('[LOGIN DEBUG] Verificando senha com bcrypt');
         const isPasswordValid = await bcrypt.compare(password, restaurant.password);
+        
         if (!isPasswordValid) {
-          throw new Error('Credenciais inválidas');
+          console.log('[LOGIN DEBUG] Senha incorreta');
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Senha incorreta. Verifique seus dados.'
+          });
         }
 
+        console.log('[LOGIN DEBUG] Login realizado com sucesso:', restaurant.name);
         return {
           id: restaurant.id,
           name: restaurant.name,
           role: restaurant.role
         };
       } catch (err: any) {
-        console.error('[LOGIN ERROR]', err);
-        throw err; // Repassa para o TRPC capturar
+        console.error('[LOGIN CRITICAL ERROR]', err);
+        if (err instanceof TRPCError) throw err;
+        
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Erro interno ao processar login: ' + err.message,
+          cause: err
+        });
       }
     }),
 
