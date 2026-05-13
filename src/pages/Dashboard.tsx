@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   LineChart, 
   DollarSign, 
@@ -11,7 +11,8 @@ import {
   Clock,
   ChevronRight,
   Download,
-  Loader2
+  Loader2,
+  Bell
 } from 'lucide-react';
 import { trpc } from '../lib/trpc';
 import { motion } from 'framer-motion';
@@ -45,6 +46,36 @@ const DashboardPage = () => {
   const { data: products } = trpc.products.list.useQuery();
   const { data: categories } = trpc.categories.list.useQuery();
   const { data: optionals } = trpc.optionals.listGroups.useQuery();
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [prevOrdersCount, setPrevOrdersCount] = useState(0);
+  
+  const { data: orders } = trpc.orders.list.useQuery(undefined, {
+    refetchInterval: 10000, // Polling a cada 10 segundos
+  });
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayOrders = orders?.filter((o: any) => o.createdAt.startsWith(today)) || [];
+  const todayRevenue = todayOrders.reduce((acc: number, o: any) => acc + Number(o.total), 0);
+
+  // Sistema de som para novos pedidos no Dashboard
+  useEffect(() => {
+    if (orders && orders.length > prevOrdersCount) {
+      const hasNewPending = orders.some((o: any) => o.status === 'pending' && !orders.find((old: any) => old.id === o.id));
+      if (hasNewPending) {
+        audioRef.current?.play().catch(e => console.log('Som bloqueado pelo navegador:', e));
+        toast('🔔 Novo pedido recebido!', {
+          description: 'Um novo pedido acaba de chegar no sistema.',
+          duration: 10000,
+          action: {
+            label: 'Ver Pedidos',
+            onClick: () => setLocation('/admin/pedidos')
+          }
+        });
+      }
+    }
+    if (orders) setPrevOrdersCount(orders.length);
+  }, [orders, prevOrdersCount, setLocation]);
 
   const menuUrl = restaurant?.slug ? `${window.location.origin}/menu/${restaurant.slug}` : '#';
 
@@ -87,6 +118,8 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-10 pb-20">
+      <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto" />
+      
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Olá, {restaurant?.name || 'Restaurante'}! 👋</h2>
@@ -100,12 +133,22 @@ const DashboardPage = () => {
           >
             Relatórios
           </button>
+          <button 
+            onClick={() => {
+              audioRef.current?.play();
+              toast.info('🔔 Teste de Notificação', { description: 'O som deve tocar agora.' });
+            }}
+            className="p-2 text-slate-400 hover:text-primary rounded-xl transition-all"
+            title="Testar Som"
+          >
+            <Bell size={18} />
+          </button>
         </div>
       </header>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Pedidos (Hoje)" value="0" icon={LineChart} color="bg-blue-500" trend="Novo" />
-        <StatCard title="Faturamento" value="R$ 0,00" icon={DollarSign} color="bg-emerald-500" />
+        <StatCard title="Pedidos (Hoje)" value={todayOrders.length} icon={LineChart} color="bg-blue-500" trend="Hoje" />
+        <StatCard title="Faturamento" value={`R$ ${todayRevenue.toFixed(2)}`} icon={DollarSign} color="bg-emerald-500" />
         <StatCard title="Produtos Ativos" value={products?.length || 0} icon={UtensilsCrossed} color="bg-orange-500" />
         <StatCard title="Categorias" value={categories?.length || 0} icon={ListTree} color="bg-purple-500" />
       </div>
