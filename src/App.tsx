@@ -279,7 +279,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           {children}
         </div>
       </motion.main>
-      <Toaster richColors position="top-right" />
     </div>
   );
 };
@@ -395,6 +394,7 @@ const App = () => {
           </Route>
         </Switch>
       </SidebarProvider>
+      <Toaster richColors position="top-right" />
     </AuthContext.Provider>
   );
 };

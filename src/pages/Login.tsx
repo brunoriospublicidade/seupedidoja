@@ -22,7 +22,20 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const { data: allRestaurants } = trpc.restaurants.listAll.useQuery();
+  const loginMutation = trpc.restaurants.login.useMutation({
+    onSuccess: (data) => {
+      localStorage.setItem('restaurant_id', data.id);
+      login(data.id);
+      toast.success(`Bem-vindo de volta, ${data.name}!`);
+      setTimeout(() => setLocation('/admin'), 200);
+    },
+    onError: (err) => {
+      toast.error('Erro no login', {
+        description: err.message || 'Credenciais inválidas. Tente novamente.'
+      });
+      setIsLoading(false);
+    }
+  });
 
   // Se já estiver logado, leva direto pro admin
   React.useEffect(() => {
@@ -38,35 +51,7 @@ const LoginPage = () => {
     }
 
     setIsLoading(true);
-    
-    // Simulação de login para o MVP
-    setTimeout(() => {
-      const searchTerms = email.toLowerCase();
-      
-      const restaurant = allRestaurants?.find(r => {
-        const emailMatch = r.email?.toLowerCase() === email.toLowerCase();
-        const phoneMatch = r.phone?.replace(/\D/g, '') === email.replace(/\D/g, '');
-        const passMatch = r.password === password;
-        
-        // Mantém compatibilidade com o mock antigo se a senha no banco estiver vazia
-        const isLegacyMatch = !r.password && (r.description?.toLowerCase().includes(`email: ${email.toLowerCase()}`) || phoneMatch);
-
-        return (emailMatch || phoneMatch) && (passMatch || isLegacyMatch);
-      });
-      
-      if (restaurant) {
-        localStorage.setItem('restaurant_id', restaurant.id);
-        login(restaurant.id);
-        
-        toast.success(`Bem-vindo de volta, ${restaurant.name}!`);
-        setTimeout(() => setLocation('/admin'), 200);
-      } else {
-        toast.error('Credenciais inválidas', {
-          description: 'E-mail ou senha incorretos. Verifique seus dados e tente novamente.'
-        });
-        setIsLoading(false);
-      }
-    }, 800);
+    loginMutation.mutate({ email, password });
   };
 
   return (

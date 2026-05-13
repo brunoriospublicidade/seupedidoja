@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { restaurants, categories, products, optionalGroups, optionalItems, settings, orders } from '../db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 
 const generateSlug = (name: string) => {
   return name
@@ -40,6 +41,50 @@ export const restaurantsRouter = router({
   listAll: publicProcedure
     .query(async () => {
       return await db.select().from(restaurants).orderBy(desc(restaurants.createdAt));
+    }),
+
+  login: publicProcedure
+    .input(z.object({
+      email: z.string(),
+      password: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { email, password } = input;
+      
+      // Busca por email ou telefone
+      const [restaurant] = await db.select()
+        .from(restaurants)
+        .where(sql`${restaurants.email} = ${email} OR ${restaurants.phone} = ${email}`);
+
+      if (!restaurant) {
+        throw new Error('Credenciais inválidas');
+      }
+
+      // Se não tiver senha (legado), tenta o match pelo description ou se a senha for vazia
+      if (!restaurant.password) {
+        const phoneMatch = restaurant.phone?.replace(/\D/g, '') === email.replace(/\D/g, '');
+        const isLegacyMatch = restaurant.description?.toLowerCase().includes(`email: ${email.toLowerCase()}`) || phoneMatch;
+        
+        if (isLegacyMatch) {
+          return {
+            id: restaurant.id,
+            name: restaurant.name,
+            role: restaurant.role
+          };
+        }
+        throw new Error('Credenciais inválidas');
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, restaurant.password);
+      if (!isPasswordValid) {
+        throw new Error('Credenciais inválidas');
+      }
+
+      return {
+        id: restaurant.id,
+        name: restaurant.name,
+        role: restaurant.role
+      };
     }),
 
   getPlatformStats: publicProcedure
@@ -85,6 +130,7 @@ export const restaurantsRouter = router({
       neighborhood: z.string().optional(),
       city: z.string().optional(),
       state: z.string().optional(),
+      password: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       // 1. Check if restaurant with same phone already exists
@@ -113,7 +159,8 @@ export const restaurantsRouter = router({
         slug,
         subscriptionPlan: 'bronze',
         primaryColor: '#F59E0B',
-        themePreference: 'light'
+        themePreference: 'light',
+        password: input.password ? await bcrypt.hash(input.password, 10) : null
       }).returning();
 
       return data;

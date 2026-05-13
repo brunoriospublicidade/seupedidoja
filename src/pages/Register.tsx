@@ -138,7 +138,8 @@ const RegisterPage = () => {
       food_type: formData.foodType,
       email: formData.email,
       phone: formData.phone,
-      address: fullAddress
+      address: fullAddress,
+      password: formData.password
     });
   };
 
