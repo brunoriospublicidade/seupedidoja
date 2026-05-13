@@ -2,7 +2,7 @@ import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { db } from '../db';
 import { restaurants, categories, products, optionalGroups, optionalItems, settings, orders } from '../db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, or } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 const generateSlug = (name: string) => {
@@ -49,42 +49,47 @@ export const restaurantsRouter = router({
       password: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const { email, password } = input;
-      
-      // Busca por email ou telefone
-      const [restaurant] = await db.select()
-        .from(restaurants)
-        .where(sql`${restaurants.email} = ${email} OR ${restaurants.phone} = ${email}`);
-
-      if (!restaurant) {
-        throw new Error('Credenciais inválidas');
-      }
-
-      // Se não tiver senha (legado), tenta o match pelo description ou se a senha for vazia
-      if (!restaurant.password) {
-        const phoneMatch = restaurant.phone?.replace(/\D/g, '') === email.replace(/\D/g, '');
-        const isLegacyMatch = restaurant.description?.toLowerCase().includes(`email: ${email.toLowerCase()}`) || phoneMatch;
+      try {
+        const { email, password } = input;
         
-        if (isLegacyMatch) {
-          return {
-            id: restaurant.id,
-            name: restaurant.name,
-            role: restaurant.role
-          };
+        // Busca por email ou telefone
+        const [restaurant] = await db.select()
+          .from(restaurants)
+          .where(or(eq(restaurants.email, email), eq(restaurants.phone, email)));
+
+        if (!restaurant) {
+          throw new Error('Credenciais inválidas');
         }
-        throw new Error('Credenciais inválidas');
-      }
 
-      const isPasswordValid = await bcrypt.compare(password, restaurant.password);
-      if (!isPasswordValid) {
-        throw new Error('Credenciais inválidas');
-      }
+        // Se não tiver senha (legado), tenta o match pelo description ou se a senha for vazia
+        if (!restaurant.password) {
+          const phoneMatch = restaurant.phone?.replace(/\D/g, '') === email.replace(/\D/g, '');
+          const isLegacyMatch = restaurant.description?.toLowerCase().includes(`email: ${email.toLowerCase()}`) || phoneMatch;
+          
+          if (isLegacyMatch) {
+            return {
+              id: restaurant.id,
+              name: restaurant.name,
+              role: restaurant.role
+            };
+          }
+          throw new Error('Credenciais inválidas');
+        }
 
-      return {
-        id: restaurant.id,
-        name: restaurant.name,
-        role: restaurant.role
-      };
+        const isPasswordValid = await bcrypt.compare(password, restaurant.password);
+        if (!isPasswordValid) {
+          throw new Error('Credenciais inválidas');
+        }
+
+        return {
+          id: restaurant.id,
+          name: restaurant.name,
+          role: restaurant.role
+        };
+      } catch (err: any) {
+        console.error('[LOGIN ERROR]', err);
+        throw err; // Repassa para o TRPC capturar
+      }
     }),
 
   getPlatformStats: publicProcedure
