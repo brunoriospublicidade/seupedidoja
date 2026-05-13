@@ -39,4 +39,4 @@ RUN npm install -g tsx
 EXPOSE 4001
 
 # Run push and then server
-CMD ["sh", "-c", "npx drizzle-kit push:pg && tsx server.ts"]
+CMD ["sh", "-c", "npx drizzle-kit push:pg ; tsx server.ts"]
