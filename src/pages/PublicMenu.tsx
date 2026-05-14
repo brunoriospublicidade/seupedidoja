@@ -130,11 +130,11 @@ const ProductModal = memo(({ product, menu, onClose, onConfirm }: { product: any
           </div>
 
           {(menu?.optionalGroups || [])
-            .filter(group => {
+            .filter((group: any) => {
               const productOptionals = Array.isArray(product?.optionals) ? product.optionals : [];
               return productOptionals.includes(group.id);
             })
-            .map(group => (
+            .map((group: any) => (
               <div key={group.id} className="space-y-4">
                 <div className="flex justify-between items-end">
                   <div>
@@ -281,7 +281,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const filteredProducts = useMemo(() => {
     if (!menu) return [];
-    return menu.products.filter(p => 
+    return menu.products.filter((p: any) => 
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -290,11 +290,11 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const categoriesWithProducts = useMemo(() => {
     if (!menu) return [];
     return menu.categories
-      .map(cat => ({
+      .map((cat: any) => ({
         ...cat,
-        products: filteredProducts.filter(p => p.categoryId === cat.id)
+        products: filteredProducts.filter((p: any) => p.categoryId === cat.id)
       }))
-      .filter(cat => cat.products.length > 0);
+      .filter((cat: any) => cat.products.length > 0);
   }, [menu, filteredProducts]);
 
   const totalItems = cart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
@@ -337,9 +337,9 @@ const PublicMenu = ({ slug }: { slug: string }) => {
     const cartItemId = `${product.id}-${JSON.stringify(selectedOptionals)}`;
 
     setCart(prev => {
-      const existing = prev.find(item => item.cartItemId === cartItemId);
+      const existing = prev.find((item: any) => item.cartItemId === cartItemId);
       if (existing) {
-        return prev.map(item => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + quantity } : item);
+        return prev.map((item: any) => item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + quantity } : item);
       }
       return [...prev, { ...product, price: finalPrice, quantity, choices, cartItemId }];
     });
@@ -573,7 +573,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
           </div>
           
           <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
-            {categoriesWithProducts.map(cat => (
+            {categoriesWithProducts.map((cat: any) => (
               <button
                 key={cat.id}
                 className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition-all ${
@@ -595,7 +595,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
       {/* Menu List */}
       <div className="max-w-4xl mx-auto px-4 mt-8 space-y-10">
-        {categoriesWithProducts.map(cat => (
+        {categoriesWithProducts.map((cat: any) => (
           <CategorySection 
             key={cat.id} 
             cat={cat} 
