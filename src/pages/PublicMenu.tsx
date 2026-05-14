@@ -189,38 +189,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   }, [activeProduct, selectedOptionals, menu]);
 
   const createOrder = trpc.orders.create.useMutation({
-    onSuccess: (data) => {
-      // WhatsApp Redirection
-      const deliveryConfig = menu?.restaurant?.deliveryConfig as any;
-      const itemsText = cart.map(i => {
-        let text = `${i.quantity}x ${i.name}`;
-        if (i.choices && i.choices.length > 0) {
-          const choicesList = i.choices.map((c: any) => `  + ${c.itemName}`).join('\n');
-          text += `\n${choicesList}`;
-        }
-        return text;
-      }).join('\n');
-
-      const addressText = loggedCustomer && selectedAddressId 
-        ? customerAddresses.find(a => a.id === selectedAddressId)?.address 
-        : customer.address;
-
-      const message = `*Novo Pedido!* 🍕\n\n` +
-        `*Cliente:* ${customer.name}\n` +
-        `*Telefone:* ${customer.phone}\n` +
-        `*Endereço:* ${addressText}\n` +
-        `*Bairro:* ${selectedNeighborhood?.name || customer.neighborhood || 'N/A'}\n\n` +
-        `*Itens:*\n${itemsText}\n\n` +
-        `*Total:* R$ ${totalPrice.toFixed(2)}\n` +
-        (appliedCoupon ? `*Cupom:* ${appliedCoupon.code} (-R$ ${couponDiscount.toFixed(2)})\n` : '') +
-        `*Pagamento:* Dinheiro (Troco p/ R$ 0,00)`;
-
-      const encodedMessage = encodeURIComponent(message);
-      const phone = menu?.restaurant?.phone?.replace(/\D/g, '') || '';
-      if (phone) {
-        window.open(`https://wa.me/55${phone}?text=${encodedMessage}`, '_blank');
-      }
-
+    onSuccess: () => {
       setOrderComplete(true);
       setCart([]);
       setAppliedCoupon(null);
