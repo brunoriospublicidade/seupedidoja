@@ -1,4 +1,4 @@
-const compressImage = async (file: File, maxWidth = 1200, quality = 0.8): Promise<Blob> => {
+const compressImage = async (file: File, maxWidth = 1200, quality = 0.8): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -20,9 +20,9 @@ const compressImage = async (file: File, maxWidth = 1200, quality = 0.8): Promis
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
 
-        canvas.toBlob((blob) => {
-          resolve(blob || file);
-        }, 'image/jpeg', quality);
+        // Retornar como Base64 (Data URL)
+        const base64 = canvas.toDataURL('image/jpeg', quality);
+        resolve(base64);
       };
     };
   });
@@ -33,52 +33,22 @@ export const uploadImage = async (
   bucket: 'products' | 'logos' | 'banners',
   onProgress?: (percent: number) => void
 ): Promise<string> => {
-  // Comprimir imagem antes de enviar se for maior que 200KB
-  let fileToUpload: File | Blob = file;
-  if (file.type.startsWith('image/') && file.size > 200 * 1024) {
-    try {
-      fileToUpload = await compressImage(file);
-    } catch (e) {
-      console.warn('Falha na compressão, enviando original', e);
-    }
+  // Agora salvamos diretamente no banco de dados como Base64 para garantir persistência total
+  if (onProgress) onProgress(50);
+  
+  try {
+    // Comprimir e converter para Base64
+    const base64 = await compressImage(file, bucket === 'logos' ? 400 : 1200, 0.7);
+    if (onProgress) onProgress(100);
+    return base64;
+  } catch (e) {
+    console.error('Erro ao processar imagem:', e);
+    // Fallback para o leitor simples se falhar a compressão
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Falha ao ler arquivo'));
+      reader.readAsDataURL(file);
+    });
   }
-
-  return new Promise((resolve, reject) => {
-    const formData = new FormData();
-    formData.append('file', fileToUpload, file.name);
-    formData.append('bucket', bucket);
-
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/upload');
-
-    if (onProgress) {
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100);
-          onProgress(percent);
-        }
-      };
-    }
-
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          resolve(data.url);
-        } catch (e) {
-          reject(new Error('Falha ao processar resposta do servidor'));
-        }
-      } else {
-        try {
-          const error = JSON.parse(xhr.responseText);
-          reject(new Error(error.error || 'Upload failed'));
-        } catch (e) {
-          reject(new Error('Erro no servidor durante o upload'));
-        }
-      }
-    };
-
-    xhr.onerror = () => reject(new Error('Erro de conexão ao enviar imagem'));
-    xhr.send(formData);
-  });
 };
