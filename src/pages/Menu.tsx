@@ -13,7 +13,7 @@ const MenuPage = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<{[key: string]: boolean}>({});
+  const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useContext();
@@ -268,7 +268,7 @@ const MenuPage = () => {
   };
 
   const toggleCategoryExpand = (catId: string) => {
-    setExpandedCategories(prev => ({ ...prev, [catId]: !prev[catId] }));
+    setExpandedCategoryId(prev => prev === catId ? null : catId);
   };
 
   if (loadingProducts) return <div className="p-8 text-center text-slate-400">Carregando cardápio...</div>;
@@ -518,13 +518,13 @@ const MenuPage = () => {
                   </span>
                 </h3>
               </div>
-              <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 group-hover:bg-slate-100 dark:group-hover:bg-slate-700 transition-colors">
-                {expandedCategories[group.id] ? <ChevronUp size={20} className="text-slate-400" /> : <ChevronDown size={20} className="text-slate-400" />}
+              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 group-hover:bg-primary/10 transition-colors">
+                {expandedCategoryId === group.id ? <ChevronUp size={18} className="text-primary" /> : <ChevronDown size={18} className="text-slate-400" />}
               </div>
             </div>
 
             <AnimatePresence initial={false}>
-              {!expandedCategories[group.id] && (
+              {expandedCategoryId === group.id && (
                 <motion.div 
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}

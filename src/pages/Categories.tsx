@@ -10,7 +10,8 @@ const CategoriesPage = () => {
   
   const [formData, setFormData] = useState({
     name: '',
-    color: '#ef4444'
+    color: '#ef4444',
+    order: 0
   });
   const [newSubName, setNewSubName] = useState('');
 
@@ -63,13 +64,17 @@ const CategoriesPage = () => {
   const closeForm = () => {
     setIsFormOpen(false);
     setEditingId(null);
-    setFormData({ name: '', color: '#ef4444' });
+    setFormData({ name: '', color: '#ef4444', order: 0 });
     setNewSubName('');
   };
 
   const handleStartEdit = (category: any) => {
     setEditingId(category.id);
-    setFormData({ name: category.name, color: category.color });
+    setFormData({ 
+      name: category.name, 
+      color: category.color,
+      order: category.order || 0
+    });
     setIsFormOpen(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -163,6 +168,20 @@ const CategoriesPage = () => {
                     <span className="text-slate-500 font-mono uppercase text-sm font-bold tracking-wider">{formData.color}</span>
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                    <Hash size={16} className="text-primary" /> Ordem de Exibição
+                  </label>
+                  <input 
+                    type="number" 
+                    value={formData.order}
+                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
+                    placeholder="0"
+                    className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all dark:text-white font-medium"
+                  />
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Menores números aparecem primeiro no cardápio.</p>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -249,10 +268,15 @@ const CategoriesPage = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-slate-800 dark:text-white group-hover:text-primary transition-colors">{category.name}</h3>
-                  <p className="text-slate-500 text-sm font-medium flex items-center gap-1.5 mt-0.5">
-                    <Hash size={14} className="text-slate-300" />
-                    {category.productCount} produtos
-                  </p>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                      <Hash size={12} className="text-slate-300" />
+                      {category.productCount} produtos
+                    </p>
+                    <p className="text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                      Ordem: {category.order || 0}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div className="flex gap-1">
