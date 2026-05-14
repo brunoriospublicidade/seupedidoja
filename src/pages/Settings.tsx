@@ -713,7 +713,7 @@ const SettingsPage = () => {
                       />
                       <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                     </div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Você pode obter seu token no painel do PagBank em "Vendas Online" > "Integrações".</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Você pode obter seu token no painel do PagBank em "Vendas Online" &gt; "Integrações".</p>
                   </div>
                 </div>
 
