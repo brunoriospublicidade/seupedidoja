@@ -1,11 +1,46 @@
 import { z } from 'zod';
 import { router, publicProcedure } from '../trpc';
 import { db } from '../db';
-import { customers, customerAddresses } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { customers, customerAddresses, orders } from '../db/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export const customerPortalRouter = router({
+  updateProfile: publicProcedure
+    .input(z.object({
+      customerId: z.string(),
+      name: z.string(),
+      email: z.string(),
+      phone: z.string(),
+      password: z.string().optional()
+    }))
+    .mutation(async ({ input }) => {
+      const updateData: any = {
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+      };
+
+      if (input.password) {
+        updateData.password = await bcrypt.hash(input.password, 10);
+      }
+
+      const [updated] = await db.update(customers)
+        .set(updateData)
+        .where(eq(customers.id, input.customerId))
+        .returning();
+      
+      const { password: _, ...userWithoutPassword } = updated;
+      return userWithoutPassword;
+    }),
+
+  listOrders: publicProcedure
+    .input(z.object({ customerId: z.string() }))
+    .query(async ({ input }) => {
+      return await db.select().from(orders)
+        .where(eq(orders.customerId, input.customerId))
+        .orderBy(desc(orders.createdAt));
+    }),
   register: publicProcedure
     .input(z.object({
       restaurantId: z.string(),

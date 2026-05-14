@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
-import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2, Ticket, Lock, UserPlus, LogOut, Map, LogIn } from 'lucide-react';
+import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2, Ticket, Lock, UserPlus, LogOut, Map, LogIn, ClipboardList, Settings, ChevronRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trpc } from '../lib/trpc';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 
 // Memoized components for better performance
 const ProductCard = memo(({ product, onClick }: { product: any; onClick: () => void }) => (
@@ -212,6 +212,126 @@ const ProductModal = memo(({ product, menu, onClose, onConfirm }: { product: any
   );
 });
 
+const ProfileOrdersList = ({ customerId }: { customerId: string }) => {
+  const { data: orders, isLoading } = trpc.customerPortal.listOrders.useQuery({ customerId });
+
+  if (isLoading) return <div className="text-center py-10"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>;
+
+  if (!orders || orders.length === 0) {
+    return (
+      <div className="text-center py-10 space-y-4">
+        <ClipboardList size={48} className="mx-auto text-slate-200" />
+        <p className="text-slate-500 font-medium">Você ainda não fez nenhum pedido.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {orders.map((order: any) => (
+        <div key={order.id} className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pedido #{order.id.slice(-6).toUpperCase()}</div>
+              <div className="text-sm font-bold text-slate-800">{new Date(order.createdAt).toLocaleDateString('pt-BR')} às {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+              order.status === 'delivered' ? 'bg-emerald-100 text-emerald-600' : 
+              order.status === 'cancelled' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'
+            }`}>
+              {order.status === 'pending' ? 'Pendente' : 
+               order.status === 'received' ? 'Recebido' :
+               order.status === 'preparing' ? 'Em Preparo' :
+               order.status === 'shipped' ? 'Em Entrega' :
+               order.status === 'delivered' ? 'Entregue' : 'Cancelado'}
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+            <div className="text-lg font-black text-slate-800">R$ {Number(order.total).toFixed(2).replace('.', ',')}</div>
+            <Link 
+              href={`/tracking/${order.id}`}
+              className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:translate-x-1 transition-transform"
+            >
+              Acompanhar <ChevronRight size={14} />
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ProfileDataForm = ({ customer, onUpdate }: { customer: any; onUpdate: (u: any) => void }) => {
+  const [formData, setFormData] = useState({
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+    password: ''
+  });
+
+  const updateMutation = trpc.customerPortal.updateProfile.useMutation({
+    onSuccess: (updated) => {
+      onUpdate(updated);
+      toast.success('Dados atualizados com sucesso!');
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome Completo</label>
+        <input 
+          type="text" 
+          value={formData.name}
+          onChange={(e) => setFormData({...formData, name: e.target.value})}
+          className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+        />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">E-mail</label>
+          <input 
+            type="email" 
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Telefone</label>
+          <input 
+            type="text" 
+            value={formData.phone}
+            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nova Senha (opcional)</label>
+        <input 
+          type="password" 
+          value={formData.password}
+          onChange={(e) => setFormData({...formData, password: e.target.value})}
+          placeholder="••••••••"
+          className="w-full p-4 bg-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 font-bold"
+        />
+      </div>
+      
+      <button 
+        onClick={() => updateMutation.mutate({ customerId: customer.id, ...formData })}
+        disabled={updateMutation.isLoading}
+        className="w-full py-4 bg-primary text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 flex items-center justify-center gap-2"
+      >
+        {updateMutation.isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Settings size={18} />}
+        Salvar Alterações
+      </button>
+    </div>
+  );
+};
+
 const PublicMenu = ({ slug }: { slug: string }) => {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -226,7 +346,8 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   // Auth & Profile State
   const [loggedCustomer, setLoggedCustomer] = useState<any>(null);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [activeProfileTab, setActiveProfileTab] = useState<'orders' | 'addresses' | 'data'>('orders');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [authForm, setAuthForm] = useState({ 
     name: '', 
@@ -518,28 +639,24 @@ const PublicMenu = ({ slug }: { slug: string }) => {
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-slate-800">{menu.restaurant.name || 'Restaurante'}</h1>
               {loggedCustomer ? (
-                <div className="flex items-center gap-3">
-                  <div className="text-right hidden md:block">
-                    <div className="text-xs font-bold text-slate-800">{loggedCustomer.name}</div>
-                    <button 
-                      onClick={() => {
-                        localStorage.removeItem(`customer_${slug}`);
-                        setLoggedCustomer(null);
-                        toast.success('Você saiu da sua conta.');
-                      }}
-                      className="text-[10px] text-rose-500 font-bold uppercase tracking-widest"
-                    >
-                      Sair
-                    </button>
-                  </div>
-                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
-                    {loggedCustomer.name.charAt(0)}
-                  </div>
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => setIsProfileOpen(true)}
+                    className="flex items-center gap-3 p-2 bg-primary/10 rounded-2xl border border-primary/20 hover:bg-primary/20 transition-all text-left"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center font-bold">
+                      {loggedCustomer.name.charAt(0)}
+                    </div>
+                    <div className="hidden md:block pr-2">
+                      <div className="text-[10px] font-black text-primary uppercase tracking-widest leading-none mb-1">Olá, Bem-vindo!</div>
+                      <div className="text-sm font-black text-slate-800 leading-none">{loggedCustomer.name}</div>
+                    </div>
+                  </button>
                 </div>
               ) : (
                 <button 
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition-all"
+                  className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
                 >
                   <User size={16} />
                   Entrar / Cadastrar
@@ -1219,3 +1336,118 @@ export default PublicMenu;
 const DollarSign = ({ size }: { size: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
 );
+      {/* Customer Profile Modal */}
+      <AnimatePresence>
+        {isProfileOpen && loggedCustomer && (
+          <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-white w-full max-w-2xl rounded-t-[40px] md:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="p-8 pb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Minha Conta</h2>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Olá, {loggedCustomer.name}</p>
+                </div>
+                <button onClick={() => setIsProfileOpen(false)} className="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-all">
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="px-8 flex gap-2 border-b border-slate-100">
+                {[
+                  { id: 'orders', label: 'Meus Pedidos', icon: ClipboardList },
+                  { id: 'addresses', label: 'Endereços', icon: MapPin },
+                  { id: 'data', label: 'Meus Dados', icon: User },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveProfileTab(tab.id as any)}
+                    className={`flex items-center gap-2 px-4 py-4 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${
+                      activeProfileTab === tab.id 
+                      ? 'border-primary text-primary' 
+                      : 'border-transparent text-slate-400'
+                    }`}
+                  >
+                    <tab.icon size={16} />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar">
+                {activeProfileTab === 'orders' && (
+                  <ProfileOrdersList customerId={loggedCustomer.id} />
+                )}
+
+                {activeProfileTab === 'addresses' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-slate-800">Endereços Salvos</h3>
+                      <button 
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          setIsCheckoutOpen(true);
+                          setIsAddingAddress(true);
+                        }}
+                        className="text-xs font-black text-primary uppercase tracking-widest"
+                      >
+                        + Adicionar
+                      </button>
+                    </div>
+                    {customerAddresses.length === 0 ? (
+                      <div className="text-center py-10 text-slate-400">Nenhum endereço salvo.</div>
+                    ) : (
+                      customerAddresses.map((addr: any) => (
+                        <div key={addr.id} className="p-4 rounded-2xl border border-slate-100 bg-slate-50 flex items-center justify-between group">
+                          <div>
+                            <div className="text-sm font-bold text-slate-800">{addr.name}</div>
+                            <div className="text-xs text-slate-500">{addr.address}, {addr.number}</div>
+                            <div className="text-[10px] text-slate-400 uppercase font-bold">{addr.neighborhood} - {addr.city}</div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              if (confirm('Excluir este endereço?')) {
+                                trpc.customerPortal.deleteAddress.useMutation().mutate({ addressId: addr.id, customerId: loggedCustomer.id });
+                                refetchAddresses();
+                              }
+                            }}
+                            className="p-2 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {activeProfileTab === 'data' && (
+                  <ProfileDataForm customer={loggedCustomer} onUpdate={(updated) => setLoggedCustomer(updated)} />
+                )}
+              </div>
+
+              {/* Footer / Logout */}
+              <div className="p-8 pt-0">
+                <button 
+                  onClick={() => {
+                    localStorage.removeItem(`customer_${slug}`);
+                    setLoggedCustomer(null);
+                    setIsProfileOpen(false);
+                    toast.success('Você saiu da sua conta.');
+                  }}
+                  className="w-full py-4 bg-rose-50 text-rose-500 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-rose-100 transition-all"
+                >
+                  <LogOut size={16} />
+                  Sair da Conta
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
