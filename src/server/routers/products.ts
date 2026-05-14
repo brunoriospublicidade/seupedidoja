@@ -90,7 +90,10 @@ export const productsRouter = router({
       return true;
     }),
 
-  bulkCreate: publicProcedure
+      return await db.insert(products).values(values).returning();
+    }),
+
+  upsertProducts: publicProcedure
     .input(z.array(z.object({
       name: z.string(),
       description: z.string().optional(),
@@ -104,17 +107,55 @@ export const productsRouter = router({
       const restaurantId = ctx.restaurantId;
       if (!restaurantId) throw new Error('Restaurant session not found');
 
-      const values = input.map(p => ({
-        name: p.name,
-        description: p.description,
-        price: p.price.toString(),
-        categoryId: p.category_id,
-        subcategoryId: p.subcategory_id,
-        imageUrl: p.image_url,
-        optionals: p.optionals,
-        restaurantId: restaurantId
-      }));
+      // 1. Get all current products
+      const currentProducts = await db.select().from(products)
+        .where(eq(products.restaurantId, restaurantId));
 
-      return await db.insert(products).values(values).returning();
+      const toUpdate = [];
+      const toInsert = [];
+
+      for (const p of input) {
+        const existing = currentProducts.find(curr => 
+          curr.name.trim().toLowerCase() === p.name.trim().toLowerCase() && 
+          curr.categoryId === p.category_id
+        );
+
+        if (existing) {
+          toUpdate.push({
+            id: existing.id,
+            data: {
+              description: p.description,
+              price: p.price.toString(),
+              optionals: p.optionals || existing.optionals,
+              subcategoryId: p.subcategory_id || existing.subcategoryId,
+            }
+          });
+        } else {
+          toInsert.push({
+            name: p.name,
+            description: p.description,
+            price: p.price.toString(),
+            categoryId: p.category_id,
+            subcategoryId: p.subcategory_id,
+            imageUrl: p.image_url,
+            optionals: p.optionals,
+            restaurantId: restaurantId
+          });
+        }
+      }
+
+      // 2. Perform Insertions
+      if (toInsert.length > 0) {
+        await db.insert(products).values(toInsert);
+      }
+
+      // 3. Perform Updates (Drizzle doesn't have bulk update with different values easily, so we loop)
+      for (const update of toUpdate) {
+        await db.update(products)
+          .set(update.data)
+          .where(eq(products.id, update.id));
+      }
+
+      return { inserted: toInsert.length, updated: toUpdate.length };
     }),
 });

@@ -52,10 +52,10 @@ const MenuPage = () => {
     })).filter(cat => cat.items.length > 0 || !searchTerm);
   }, [products, categories, searchTerm]);
 
-  const bulkCreateMutation = trpc.products.bulkCreate.useMutation({
-    onSuccess: () => {
+  const upsertMutation = trpc.products.upsertProducts.useMutation({
+    onSuccess: (res) => {
       utils.products.list.invalidate();
-      toast.success('Produtos importados com sucesso!');
+      toast.success(`Importação finalizada: ${res.inserted} novos e ${res.updated} atualizados.`);
       setIsImporting(false);
     },
     onError: (err) => {
@@ -236,7 +236,7 @@ const MenuPage = () => {
         }
 
         if (productsToImport.length > 0) {
-          bulkCreateMutation.mutate(productsToImport);
+          upsertMutation.mutate(productsToImport);
           if (missingCategories.size > 0) {
             toast.warning(`${productsToImport.length} produtos prontos, mas as categorias: ${Array.from(missingCategories).join(', ')} não foram encontradas.`);
           }
