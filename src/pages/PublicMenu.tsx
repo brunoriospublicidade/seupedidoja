@@ -3,8 +3,10 @@ import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, Us
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trpc } from '../lib/trpc';
+import { useLocation } from 'wouter';
 
 const PublicMenu = ({ slug }: { slug: string }) => {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeProduct, setActiveProduct] = useState<any>(null);
@@ -189,12 +191,19 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   }, [activeProduct, selectedOptionals, menu]);
 
   const createOrder = trpc.orders.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setOrderComplete(true);
       setCart([]);
       setAppliedCoupon(null);
       setCouponCode('');
       toast.success('Pedido enviado com sucesso!');
+      
+      // Redirecionar para o acompanhamento após um pequeno delay para mostrar o toast
+      setTimeout(() => {
+        if (data?.id) {
+          setLocation(`/tracking/${data.id}`);
+        }
+      }, 1500);
     },
     onError: (err) => {
       toast.error('Erro ao enviar pedido: ' + err.message);

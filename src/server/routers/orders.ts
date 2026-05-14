@@ -22,6 +22,27 @@ export const ordersRouter = router({
       }));
     }),
 
+  getById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const [order] = await db.select().from(orders)
+        .where(eq(orders.id, input.id));
+      
+      if (!order) return null;
+
+      const [customer] = await db.select().from(customers)
+        .where(eq(customers.id, order.customerId));
+
+      const [restaurant] = await db.select().from(restaurants)
+        .where(eq(restaurants.id, order.restaurantId));
+
+      return {
+        ...order,
+        customer,
+        restaurant
+      };
+    }),
+
   getStats: publicProcedure
     .query(async ({ ctx }) => {
       const restaurantId = ctx.restaurantId;

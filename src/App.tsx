@@ -32,6 +32,7 @@ import LandingPage from './pages/Landing';
 import RegisterPage from './pages/Register';
 import LoginPage from './pages/Login';
 import DashboardPage from './pages/Dashboard';
+import OrderTracking from './pages/OrderTracking';
 import CategoriesPage from './pages/Categories';
 import OptionalsPage from './pages/Optionals';
 import SettingsPage from './pages/Settings';
@@ -330,6 +331,7 @@ const App = () => {
           <Route path="/menu/:slug">
             {(params) => <PublicMenu slug={params.slug} />}
           </Route>
+          <Route path="/tracking/:id" component={OrderTracking} />
 
           <Route path="/admin/produtos">
             <Layout><MenuPage /></Layout>
