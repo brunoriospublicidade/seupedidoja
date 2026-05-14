@@ -202,37 +202,45 @@ const MenuPage = () => {
         const missingCategories = new Set<string>();
         
         for (const row of data) {
-          // Mapeamento flexível de cabeçalhos
-          const name = row['Nome'] || row['Nome do Produto'] || row['nome'];
-          const categoryName = row['Categoria'] || row['categoria'];
-          const description = row['Descrição'] || row['Descricao'] || row['descrição'] || row['descricao'] || '';
-          
-          // Tratamento flexível de preço (suporta vírgula e múltiplos nomes de coluna)
-          let priceRaw = row['Valor (R$)'] || row['Preço'] || row['Preco'] || row['Valor'] || row['valor'] || row['preço'];
-          let price = 0;
-          
-          if (typeof priceRaw === 'string') {
-            const cleanPrice = priceRaw.replace('R$', '').trim();
-            // Se tiver os dois, remove o primeiro (milhar) e troca o segundo por ponto
-            if (cleanPrice.includes('.') && cleanPrice.includes(',')) {
-              const lastDot = cleanPrice.lastIndexOf('.');
-              const lastComma = cleanPrice.lastIndexOf(',');
-              if (lastDot > lastComma) {
-                // Formato 1,000.00
-                price = parseFloat(cleanPrice.replace(/,/g, '')) || 0;
-              } else {
-                // Formato 1.000,00
-                price = parseFloat(cleanPrice.replace(/\./g, '').replace(',', '.')) || 0;
+          // Busca agressiva de colunas (ignora maiúsculas/minúsculas e espaços)
+          const findValue = (possibleKeys: string[]) => {
+            const rowKeys = Object.keys(row);
+            for (const key of rowKeys) {
+              const normalizedKey = key.trim().toLowerCase();
+              if (possibleKeys.some(pk => normalizedKey === pk || normalizedKey.includes(pk))) {
+                return row[key];
               }
-            } else if (cleanPrice.includes(',')) {
-              // Formato 32,90
-              price = parseFloat(cleanPrice.replace(',', '.')) || 0;
-            } else {
-              // Formato 32.90 ou apenas números
-              price = parseFloat(cleanPrice) || 0;
             }
-          } else if (typeof priceRaw === 'number') {
-            price = priceRaw;
+            return null;
+          };
+
+          const name = findValue(['nome do produto', 'nome', 'item', 'produto']);
+          const categoryName = findValue(['categoria', 'category', 'seção', 'secao', 'grupo']);
+          const description = findValue(['descrição', 'descricao', 'desc', 'description']) || '';
+          const priceRaw = findValue(['valor', 'preço', 'preco', 'price']);
+          
+          let price = 0;
+          if (priceRaw !== null && priceRaw !== undefined) {
+            if (typeof priceRaw === 'string') {
+              // Limpeza profunda: remove tudo que não é número, ponto ou vírgula
+              const cleanPrice = priceRaw.replace(/[^\d,.]/g, '').trim();
+              
+              if (cleanPrice.includes('.') && cleanPrice.includes(',')) {
+                const lastDot = cleanPrice.lastIndexOf('.');
+                const lastComma = cleanPrice.lastIndexOf(',');
+                if (lastDot > lastComma) {
+                  price = parseFloat(cleanPrice.replace(/,/g, '')) || 0;
+                } else {
+                  price = parseFloat(cleanPrice.replace(/\./g, '').replace(',', '.')) || 0;
+                }
+              } else if (cleanPrice.includes(',')) {
+                price = parseFloat(cleanPrice.replace(',', '.')) || 0;
+              } else {
+                price = parseFloat(cleanPrice) || 0;
+              }
+            } else if (typeof priceRaw === 'number') {
+              price = priceRaw;
+            }
           }
           
           if (!name || !categoryName) continue;
