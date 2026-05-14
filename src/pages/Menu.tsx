@@ -212,7 +212,25 @@ const MenuPage = () => {
           let price = 0;
           
           if (typeof priceRaw === 'string') {
-            price = parseFloat(priceRaw.replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0;
+            const cleanPrice = priceRaw.replace('R$', '').trim();
+            // Se tiver os dois, remove o primeiro (milhar) e troca o segundo por ponto
+            if (cleanPrice.includes('.') && cleanPrice.includes(',')) {
+              const lastDot = cleanPrice.lastIndexOf('.');
+              const lastComma = cleanPrice.lastIndexOf(',');
+              if (lastDot > lastComma) {
+                // Formato 1,000.00
+                price = parseFloat(cleanPrice.replace(/,/g, '')) || 0;
+              } else {
+                // Formato 1.000,00
+                price = parseFloat(cleanPrice.replace(/\./g, '').replace(',', '.')) || 0;
+              }
+            } else if (cleanPrice.includes(',')) {
+              // Formato 32,90
+              price = parseFloat(cleanPrice.replace(',', '.')) || 0;
+            } else {
+              // Formato 32.90 ou apenas números
+              price = parseFloat(cleanPrice) || 0;
+            }
           } else if (typeof priceRaw === 'number') {
             price = priceRaw;
           }
