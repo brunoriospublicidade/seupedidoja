@@ -199,42 +199,63 @@ const MenuPage = () => {
         if (data.length === 0) throw new Error('Planilha vazia');
 
         const productsToImport: any[] = [];
+        const missingCategories = new Set<string>();
         
         for (const row of data) {
-          const name = row['Nome do Produto'];
-          const categoryName = row['Categoria'];
-          const price = parseFloat(row['Preco']) || 0;
+          // Mapeamento flexível de cabeçalhos
+          const name = row['Nome'] || row['Nome do Produto'] || row['nome'];
+          const categoryName = row['Categoria'] || row['categoria'];
+          const description = row['Descrição'] || row['Descricao'] || row['descrição'] || row['descricao'] || '';
+          
+          // Tratamento flexível de preço (suporta vírgula e múltiplos nomes de coluna)
+          let priceRaw = row['Valor (R$)'] || row['Preço'] || row['Preco'] || row['Valor'] || row['valor'] || row['preço'];
+          let price = 0;
+          
+          if (typeof priceRaw === 'string') {
+            price = parseFloat(priceRaw.replace('R$', '').replace('.', '').replace(',', '.').trim()) || 0;
+          } else if (typeof priceRaw === 'number') {
+            price = priceRaw;
+          }
           
           if (!name || !categoryName) continue;
 
-          // Encontrar ou marcar categoria (simplificado: assume que categorias já existem ou usa IDs se possível)
-          // Para uma importação real, o ideal seria criar categorias dinamicamente
-          const category = categories?.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+          const category = categories?.find(c => c.name.trim().toLowerCase() === categoryName.trim().toLowerCase());
           
           if (category) {
             productsToImport.push({
-              name,
-              description: row['Descricao'] || '',
+              name: name.toString().trim(),
+              description: description.toString().trim(),
               price,
               category_id: category.id,
               restaurant_id: restaurant.id,
-              optionals: [] // Opcionais precisariam de lógica mais complexa de mapeamento
+              optionals: []
             });
+          } else {
+            missingCategories.add(categoryName);
           }
         }
 
         if (productsToImport.length > 0) {
           bulkCreateMutation.mutate(productsToImport);
+          if (missingCategories.size > 0) {
+            toast.warning(`${productsToImport.length} produtos prontos, mas as categorias: ${Array.from(missingCategories).join(', ')} não foram encontradas.`);
+          }
         } else {
-          toast.error('Nenhum produto válido encontrado. Verifique se as categorias na planilha já existem no sistema.');
+          if (missingCategories.size > 0) {
+            toast.error(`Nenhum produto importado. As categorias: ${Array.from(missingCategories).join(', ')} não foram encontradas no sistema.`);
+          } else {
+            toast.error('Nenhum produto válido encontrado. Verifique se os cabeçalhos da planilha estão corretos.');
+          }
           setIsImporting(false);
         }
       } catch (err) {
-        toast.error('Erro ao ler planilha');
+        toast.error('Erro ao ler planilha: ' + (err instanceof Error ? err.message : 'Erro desconhecido'));
         setIsImporting(false);
       }
     };
     reader.readAsBinaryString(file);
+    // Limpar o input para permitir re-importar o mesmo arquivo se necessário
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const toggleGroup = (groupId: string) => {
