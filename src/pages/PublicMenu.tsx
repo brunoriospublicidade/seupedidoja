@@ -17,8 +17,15 @@ const ProductCard = memo(({ product, onClick }: { product: any; onClick: () => v
       <div className="pt-2 font-bold text-slate-800">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</div>
     </div>
     {product.imageUrl && (
-      <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm">
-        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+      <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm bg-slate-50">
+        <img 
+          src={product.imageUrl} 
+          alt={product.name} 
+          className="w-full h-full object-cover" 
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80";
+          }}
+        />
       </div>
     )}
   </div>
@@ -99,7 +106,14 @@ const ProductModal = memo(({ product, menu, onClose, onConfirm }: { product: any
         className="bg-white w-full max-w-2xl rounded-t-[40px] md:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]"
       >
         <div className="relative h-64 bg-slate-100">
-          <img src={product.imageUrl} className="w-full h-full object-cover" alt={product.name} />
+          <img 
+            src={product.imageUrl} 
+            className="w-full h-full object-cover" 
+            alt={product.name} 
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+            }}
+          />
           <button 
             onClick={onClose}
             className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg"
@@ -480,6 +494,9 @@ const PublicMenu = ({ slug }: { slug: string }) => {
           src={menu.restaurant.bannerUrl || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80"} 
           className="w-full h-full object-cover"
           alt="Banner"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1000&q=80";
+          }}
         />
         <div className="absolute inset-0 bg-black/30" />
       </div>
@@ -488,7 +505,14 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       <div className="max-w-4xl mx-auto -mt-16 relative px-4 z-10">
         <div className="bg-white p-6 rounded-[32px] shadow-2xl flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-left border border-slate-100">
           <div className="w-32 h-32 rounded-[32px] bg-white p-1 shadow-2xl -mt-20 md:-mt-16 border-[6px] border-white overflow-hidden flex-shrink-0">
-            <img src={menu.restaurant.logoUrl || ""} alt="Logo" className="w-full h-full object-contain rounded-[24px]" />
+            <img 
+              src={menu.restaurant.logoUrl || ""} 
+              alt="Logo" 
+              className="w-full h-full object-contain rounded-[24px]" 
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(menu.restaurant.name || "Restaurante") + "&background=random";
+              }}
+            />
           </div>
           <div className="flex-1 space-y-2">
             <div className="flex items-center justify-between">

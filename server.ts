@@ -117,6 +117,12 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 });
 
 // Serve uploads statically
+console.log(`[LOG] Uploads Path: ${uploadsPath}`);
+if (fs.existsSync(uploadsPath)) {
+  console.log(`[LOG] Uploads directory exists. Files:`, fs.readdirSync(uploadsPath));
+} else {
+  console.error(`[ERROR] Uploads directory does NOT exist at: ${uploadsPath}`);
+}
 app.use('/uploads', express.static(uploadsPath));
 
 // Serve static files from the React app
