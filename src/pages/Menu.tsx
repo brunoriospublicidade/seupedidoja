@@ -247,6 +247,16 @@ const MenuPage = () => {
 
           const category = categories?.find(c => c.name.trim().toLowerCase() === categoryName.trim().toLowerCase());
           
+          const optionalsRaw = findValue(['opcionais', 'complementos', 'adicionais', 'groups']);
+          const selectedOptionals: string[] = [];
+          if (optionalsRaw && optionalGroups) {
+            const names = optionalsRaw.toString().split(',').map((s: string) => s.trim().toLowerCase());
+            for (const optName of names) {
+              const group = optionalGroups.find(g => g.name.trim().toLowerCase() === optName);
+              if (group) selectedOptionals.push(group.id);
+            }
+          }
+
           if (category) {
             productsToImport.push({
               name: name.toString().trim(),
@@ -254,7 +264,7 @@ const MenuPage = () => {
               price,
               category_id: category.id,
               restaurant_id: restaurant.id,
-              optionals: []
+              optionals: selectedOptionals
             });
           } else {
             missingCategories.add(categoryName);
