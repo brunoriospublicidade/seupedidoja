@@ -1,9 +1,202 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2, Ticket, Lock, UserPlus, LogOut, Map, LogIn } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trpc } from '../lib/trpc';
 import { useLocation } from 'wouter';
+
+// Memoized components for better performance
+const ProductCard = memo(({ product, onClick }: { product: any; onClick: () => void }) => (
+  <div 
+    onClick={onClick}
+    className="bg-white p-4 rounded-3xl border border-slate-100 flex gap-4 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
+  >
+    <div className="flex-1 space-y-1">
+      <h3 className="font-bold text-slate-800">{product.name}</h3>
+      <p className="text-sm text-slate-500 line-clamp-2">{product.description}</p>
+      <div className="pt-2 font-bold text-slate-800">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</div>
+    </div>
+    {product.imageUrl && (
+      <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm">
+        <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+      </div>
+    )}
+  </div>
+));
+
+const CategorySection = memo(({ cat, onProductClick }: { cat: any; onProductClick: (p: any) => void }) => (
+  <section id={`cat-${cat.id}`} className="space-y-4">
+    <h2 className="text-xl font-bold text-slate-800">{cat.name}</h2>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {cat.products.map((product: any) => (
+        <ProductCard 
+          key={product.id} 
+          product={product} 
+          onClick={() => onProductClick(product)} 
+        />
+      ))}
+    </div>
+  </section>
+));
+
+const ProductModal = memo(({ product, menu, onClose, onConfirm }: { product: any; menu: any; onClose: () => void; onConfirm: (product: any, selectedOptionals: any) => void }) => {
+  const [selectedOptionals, setSelectedOptionals] = useState<Record<string, string[]>>({});
+
+  const toggleOptional = (groupId: string, itemId: string, maxSelection: number) => {
+    setSelectedOptionals(prev => {
+      const current = prev[groupId] || [];
+      if (current.includes(itemId)) {
+        return { ...prev, [groupId]: current.filter(id => id !== itemId) };
+      }
+      if (maxSelection === 1) {
+        return { ...prev, [groupId]: [itemId] };
+      }
+      if (current.length < maxSelection) {
+        return { ...prev, [groupId]: [...current, itemId] };
+      }
+      return prev;
+    });
+  };
+
+  const isOptionalGroupValid = (group: any) => {
+    const selected = selectedOptionals[group.id] || [];
+    if (group.isMandatory && selected.length === 0) return false;
+    return true;
+  };
+
+  const isProductValid = useMemo(() => {
+    if (!product) return false;
+    const productOptionals = (Array.isArray(product?.optionals) ? product.optionals : [])
+      .map((opt: any) => typeof opt === 'string' ? opt : opt?.id)
+      .filter(Boolean);
+      
+    const groups = (menu?.optionalGroups || [])
+      .filter((g: any) => productOptionals.includes(g.id)) || [];
+    
+    if (groups.length === 0) return true;
+    return groups.every(isOptionalGroupValid);
+  }, [product, selectedOptionals, menu]);
+
+  const currentModalPrice = useMemo(() => {
+    if (!product) return 0;
+    let total = Number(product.price) || 0;
+    Object.entries(selectedOptionals).forEach(([groupId, itemIds]) => {
+      const group = (menu?.optionalGroups || []).find((g: any) => g.id === groupId);
+      itemIds.forEach(itemId => {
+        const item = (group?.optional_items || []).find((i: any) => i.id === itemId);
+        if (item) total += Number(item.price) || 0;
+      });
+    });
+    return total;
+  }, [product, selectedOptionals, menu]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div 
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        className="bg-white w-full max-w-2xl rounded-t-[40px] md:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        <div className="relative h-64 bg-slate-100">
+          <img src={product.imageUrl} className="w-full h-full object-cover" alt={product.name} />
+          <button 
+            onClick={onClose}
+            className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-8 flex-1 overflow-y-auto space-y-8 no-scrollbar">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800">{product.name}</h2>
+            <p className="text-slate-500 mt-2">{product.description}</p>
+            <div className="text-xl font-bold text-primary mt-4">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</div>
+          </div>
+
+          {(menu?.optionalGroups || [])
+            .filter(group => {
+              const productOptionals = Array.isArray(product?.optionals) ? product.optionals : [];
+              return productOptionals.includes(group.id);
+            })
+            .map(group => (
+              <div key={group.id} className="space-y-4">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                      {group.name}
+                      {group.isMandatory && (
+                        <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded transition-colors ${
+                          (selectedOptionals[group.id] || []).length > 0 
+                          ? 'bg-emerald-100 text-emerald-600' 
+                          : 'bg-rose-100 text-rose-600 animate-pulse'
+                        }`}>
+                          { (selectedOptionals[group.id] || []).length > 0 ? 'Preenchido' : 'Obrigatório' }
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-xs text-slate-400">Escolha até {group.maxSelection} {group.maxSelection === 1 ? 'opção' : 'opções'}.</p>
+                  </div>
+                  <div className="text-[10px] font-black text-slate-300 uppercase">
+                    {(selectedOptionals[group.id] || []).length} / {group.maxSelection}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {group.optional_items.map((item: any) => {
+                    const isSelected = (selectedOptionals[group.id] || []).includes(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => toggleOptional(group.id, item.id, group.maxSelection || 1)}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                          isSelected 
+                          ? 'border-primary bg-primary/5 text-primary' 
+                          : group.isMandatory && (selectedOptionals[group.id] || []).length === 0
+                          ? 'border-rose-200 bg-white text-slate-600 hover:border-rose-300'
+                          : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                            isSelected ? 'border-primary bg-primary' : 'border-slate-200'
+                          }`}>
+                            {isSelected && <CheckCircle2 size={12} className="text-white" />}
+                          </div>
+                          <span className="text-sm font-bold">{item.name}</span>
+                        </div>
+                        {Number(item.price) > 0 && (
+                          <span className="text-xs font-black">+ R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+        </div>
+
+        <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex items-center gap-4">
+          <button 
+            onClick={() => onConfirm(product, selectedOptionals)}
+            disabled={!isProductValid}
+            className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale disabled:scale-100"
+          >
+            {isProductValid ? (
+              <>Adicionar <span className="opacity-60">•</span> R$ {currentModalPrice.toFixed(2).replace('.', ',')}</>
+            ) : (
+              <div className="flex flex-col items-center">
+                <span className="text-sm">Selecione os itens obrigatórios</span>
+                <span className="text-[10px] opacity-70 uppercase tracking-widest">Confira as opções marcadas em vermelho</span>
+              </div>
+            )}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+});
 
 const PublicMenu = ({ slug }: { slug: string }) => {
   const [, setLocation] = useLocation();
@@ -108,9 +301,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const totalPrice = Math.max(0, itemsPrice + deliveryFee - couponDiscount);
 
-  const [selectedOptionals, setSelectedOptionals] = useState<Record<string, string[]>>({});
-
-  const addToCart = (product: any, quantity: number = 1) => {
+  const addToCart = (product: any, selectedOptionals: Record<string, string[]>, quantity: number = 1) => {
     // Calcular preço total do item (base + opcionais)
     let extraPrice = 0;
     const choices: any[] = [];
@@ -140,55 +331,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
     });
     
     setActiveProduct(null);
-    setSelectedOptionals({});
   };
-
-  const toggleOptional = (groupId: string, itemId: string, maxSelection: number) => {
-    setSelectedOptionals(prev => {
-      const current = prev[groupId] || [];
-      if (current.includes(itemId)) {
-        return { ...prev, [groupId]: current.filter(id => id !== itemId) };
-      }
-      if (maxSelection === 1) {
-        return { ...prev, [groupId]: [itemId] };
-      }
-      if (current.length < maxSelection) {
-        return { ...prev, [groupId]: [...current, itemId] };
-      }
-      return prev;
-    });
-  };
-
-  const isOptionalGroupValid = (group: any) => {
-    const selected = selectedOptionals[group.id] || [];
-    if (group.isMandatory && selected.length === 0) return false;
-    return true;
-  };
-
-  const isProductValid = useMemo(() => {
-    if (!activeProduct) return false;
-    const productOptionals = (Array.isArray(activeProduct?.optionals) ? activeProduct.optionals : [])
-      .map((opt: any) => typeof opt === 'string' ? opt : opt?.id)
-      .filter(Boolean);
-      
-    const groups = (menu?.optionalGroups || []).filter((g: any) => productOptionals.includes(g.id)) || [];
-    if (groups.length === 0) return true;
-    
-    return groups.every(isOptionalGroupValid);
-  }, [activeProduct, selectedOptionals, menu]);
-
-  const currentModalPrice = useMemo(() => {
-    if (!activeProduct) return 0;
-    let total = Number(activeProduct.price) || 0;
-    Object.entries(selectedOptionals).forEach(([groupId, itemIds]) => {
-      const group = (menu?.optionalGroups || []).find((g: any) => g.id === groupId);
-      itemIds.forEach(itemId => {
-        const item = (group?.optional_items || []).find((i: any) => i.id === itemId);
-        if (item) total += Number(item.price) || 0;
-      });
-    });
-    return total;
-  }, [activeProduct, selectedOptionals, menu]);
 
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: (data) => {
@@ -429,142 +572,23 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       {/* Menu List */}
       <div className="max-w-4xl mx-auto px-4 mt-8 space-y-10">
         {categoriesWithProducts.map(cat => (
-          <section key={cat.id} id={`cat-${cat.id}`} className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-800">{cat.name}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {cat.products.map((product: any) => (
-                <div 
-                  key={product.id} 
-                  onClick={() => setActiveProduct(product)}
-                  className="bg-white p-4 rounded-3xl border border-slate-100 flex gap-4 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
-                >
-                  <div className="flex-1 space-y-1">
-                    <h3 className="font-bold text-slate-800">{product.name}</h3>
-                    <p className="text-sm text-slate-500 line-clamp-2">{product.description}</p>
-                    <div className="pt-2 font-bold text-slate-800">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</div>
-                  </div>
-                  {product.imageUrl && (
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm">
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
+          <CategorySection 
+            key={cat.id} 
+            cat={cat} 
+            onProductClick={setActiveProduct} 
+          />
         ))}
       </div>
 
       {/* Product Detail Modal */}
       <AnimatePresence>
         {activeProduct && (
-          <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              className="bg-white w-full max-w-2xl rounded-t-[40px] md:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="relative h-64 bg-slate-100">
-                <img src={activeProduct.imageUrl} className="w-full h-full object-cover" alt={activeProduct.name} />
-                <button 
-                  onClick={() => setActiveProduct(null)}
-                  className="absolute top-6 right-6 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="p-8 flex-1 overflow-y-auto space-y-8 no-scrollbar">
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-800">{activeProduct.name}</h2>
-                  <p className="text-slate-500 mt-2">{activeProduct.description}</p>
-                  <div className="text-xl font-bold text-primary mt-4">R$ {(Number(activeProduct.price) || 0).toFixed(2).replace('.', ',')}</div>
-                </div>
-
-                {/* Optional Groups */}
-                {(menu?.optionalGroups || [])
-                  .filter(group => {
-                    const productOptionals = Array.isArray(activeProduct?.optionals) 
-                      ? activeProduct.optionals 
-                      : [];
-                    return productOptionals.includes(group.id);
-                  })
-                  .map(group => (
-                    <div key={group.id} className="space-y-4">
-                      <div className="flex justify-between items-end">
-                        <div>
-                          <h4 className="font-bold text-slate-800 flex items-center gap-2">
-                            {group.name}
-                            {group.isMandatory && (
-                              <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded transition-colors ${
-                                (selectedOptionals[group.id] || []).length > 0 
-                                ? 'bg-emerald-100 text-emerald-600' 
-                                : 'bg-rose-100 text-rose-600 animate-pulse'
-                              }`}>
-                                { (selectedOptionals[group.id] || []).length > 0 ? 'Preenchido' : 'Obrigatório' }
-                              </span>
-                            )}
-                          </h4>
-                          <p className="text-xs text-slate-400">Escolha até {group.maxSelection} {group.maxSelection === 1 ? 'opção' : 'opções'}.</p>
-                        </div>
-                        <div className="text-[10px] font-black text-slate-300 uppercase">
-                          {(selectedOptionals[group.id] || []).length} / {group.maxSelection}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        {group.optional_items.map((item: any) => {
-                          const isSelected = (selectedOptionals[group.id] || []).includes(item.id);
-                          return (
-                            <button
-                              key={item.id}
-                              onClick={() => toggleOptional(group.id, item.id, group.maxSelection || 1)}
-                              className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                                isSelected 
-                                ? 'border-primary bg-primary/5 text-primary' 
-                                : group.isMandatory && (selectedOptionals[group.id] || []).length === 0
-                                ? 'border-rose-200 bg-white text-slate-600 hover:border-rose-300'
-                                : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                                  isSelected ? 'border-primary bg-primary' : 'border-slate-200'
-                                }`}>
-                                  {isSelected && <CheckCircle2 size={12} className="text-white" />}
-                                </div>
-                                <span className="text-sm font-bold">{item.name}</span>
-                              </div>
-                              {Number(item.price) > 0 && (
-                                <span className="text-xs font-black">+ R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-
-              <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex items-center gap-4">
-                <button 
-                  onClick={() => addToCart(activeProduct)}
-                  disabled={!isProductValid}
-                  className="flex-1 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale disabled:scale-100"
-                >
-                  {isProductValid ? (
-                    <>Adicionar <span className="opacity-60">•</span> R$ {currentModalPrice.toFixed(2).replace('.', ',')}</>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <span className="text-sm">Selecione os itens obrigatórios</span>
-                      <span className="text-[10px] opacity-70 uppercase tracking-widest">Confira as opções marcadas em vermelho</span>
-                    </div>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </div>
+          <ProductModal 
+            product={activeProduct}
+            menu={menu}
+            onClose={() => setActiveProduct(null)}
+            onConfirm={addToCart}
+          />
         )}
       </AnimatePresence>
 
