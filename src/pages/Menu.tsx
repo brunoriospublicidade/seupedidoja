@@ -13,6 +13,8 @@ const MenuPage = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [resetPassword, setResetPassword] = useState('');
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +53,18 @@ const MenuPage = () => {
       items: filtered.filter(p => p.categoryId === cat.id)
     })).filter(cat => cat.items.length > 0 || !searchTerm);
   }, [products, categories, searchTerm]);
+
+  const resetMutation = trpc.products.resetMenu.useMutation({
+    onSuccess: () => {
+      utils.products.list.invalidate();
+      toast.success('Todo o cardápio foi resetado com sucesso!');
+      setIsResetModalOpen(false);
+      setResetPassword('');
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    }
+  });
 
   const upsertMutation = trpc.products.upsertProducts.useMutation({
     onSuccess: (res) => {
@@ -322,7 +336,15 @@ const MenuPage = () => {
             className="flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-3 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
           >
             <Download size={18} />
-            Planilha Modelo
+            Modelo
+          </button>
+          
+          <button 
+            onClick={() => setIsResetModalOpen(true)}
+            className="flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/10 text-red-500 px-5 py-3 rounded-2xl font-bold hover:bg-red-100 dark:hover:bg-red-900/20 transition-all active:scale-95"
+          >
+            <Trash2 size={18} />
+            Resetar Tudo
           </button>
           <button 
             onClick={() => fileInputRef.current?.click()}
@@ -643,6 +665,63 @@ const MenuPage = () => {
           </div>
         ))}
       </div>
+      {/* Modal de Reset de Cardápio */}
+      <AnimatePresence>
+        {isResetModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsResetModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[32px] p-8 shadow-2xl space-y-6"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Trash2 size={32} />
+                </div>
+                <h3 className="text-2xl font-bold dark:text-white">Resetar Cardápio?</h3>
+                <p className="text-slate-500 text-sm">Esta ação é irreversível e excluirá **todos** os produtos do seu cardápio atual.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Confirme sua senha de acesso</label>
+                  <input 
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    placeholder="Sua senha..."
+                    className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all dark:text-white"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setIsResetModalOpen(false)}
+                    className="flex-1 py-4 text-slate-500 font-bold hover:text-slate-700 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => resetMutation.mutate({ password: resetPassword })}
+                    disabled={!resetPassword || resetMutation.isLoading}
+                    className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-500/30 hover:bg-red-600 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {resetMutation.isLoading ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Confirmar Reset'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

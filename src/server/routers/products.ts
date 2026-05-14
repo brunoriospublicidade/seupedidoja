@@ -1,7 +1,7 @@
 import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { db } from '../db';
-import { products, subcategories } from '../db/schema';
+import { products, subcategories, restaurants } from '../db/schema';
 import { eq, asc } from 'drizzle-orm';
 
 export const productsRouter = router({
@@ -153,5 +153,25 @@ export const productsRouter = router({
       }
 
       return { inserted: toInsert.length, updated: toUpdate.length };
+    }),
+
+  resetMenu: publicProcedure
+    .input(z.object({ password: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const restaurantId = ctx.restaurantId;
+      if (!restaurantId) throw new Error('Restaurant session not found');
+
+      // 1. Verify password
+      const [restaurant] = await db.select().from(restaurants)
+        .where(eq(restaurants.id, restaurantId));
+      
+      if (!restaurant || restaurant.password !== input.password) {
+        throw new Error('Senha incorreta. O cardápio não foi resetado.');
+      }
+
+      // 2. Delete all products
+      await db.delete(products).where(eq(products.restaurantId, restaurantId));
+
+      return { success: true };
     }),
 });
