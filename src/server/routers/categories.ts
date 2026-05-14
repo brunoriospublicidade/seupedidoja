@@ -96,4 +96,16 @@ export const categoriesRouter = router({
       await db.delete(subcategories).where(eq(subcategories.id, input.id));
       return true;
     }),
+  swapOrder: publicProcedure
+    .input(z.object({
+      id1: z.string(),
+      order1: z.number(),
+      id2: z.string(),
+      order2: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      await db.update(categories).set({ order: input.order2 }).where(eq(categories.id, input.id1));
+      await db.update(categories).set({ order: input.order1 }).where(eq(categories.id, input.id2));
+      return true;
+    }),
 });

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, LayoutGrid, Hash, Layers, X, PlusCircle, Pencil, Trash2, Save, Palette, Type } from 'lucide-react';
+import { Plus, LayoutGrid, Hash, Layers, X, PlusCircle, Pencil, Trash2, Save, Palette, Type, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trpc } from '../lib/trpc';
@@ -53,6 +53,28 @@ const CategoriesPage = () => {
       setNewSubName('');
     }
   });
+
+  const swapOrderMutation = trpc.categories.swapOrder.useMutation({
+    onSuccess: () => {
+      utils.categories.list.invalidate();
+    }
+  });
+
+  const handleMove = (index: number, direction: 'up' | 'down') => {
+    if (!categories) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= categories.length) return;
+
+    const current = categories[index];
+    const target = categories[targetIndex];
+
+    swapOrderMutation.mutate({
+      id1: current.id,
+      order1: current.order || 0,
+      id2: target.id,
+      order2: target.order || 0
+    });
+  };
 
   const deleteSubMutation = trpc.categories.deleteSubcategory.useMutation({
     onSuccess: () => {
@@ -169,18 +191,6 @@ const CategoriesPage = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                    <Hash size={16} className="text-primary" /> Ordem de Exibição
-                  </label>
-                  <input 
-                    type="number" 
-                    value={formData.order}
-                    onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) || 0 })}
-                    placeholder="0"
-                    className="w-full p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all dark:text-white font-medium"
-                  />
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Menores números aparecem primeiro no cardápio.</p>
                 </div>
               </div>
 
@@ -273,25 +283,40 @@ const CategoriesPage = () => {
                       <Hash size={12} className="text-slate-300" />
                       {category.productCount} produtos
                     </p>
-                    <p className="text-primary text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                      Ordem: {category.order || 0}
-                    </p>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-1">
-                <button 
-                  onClick={() => handleStartEdit(category)}
-                  className="p-2.5 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
-                >
-                  <Pencil size={18} />
-                </button>
-                <button 
-                  onClick={() => { if(confirm('Excluir categoria?')) deleteMutation.mutate({ id: category.id }) }}
-                  className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all"
-                >
-                  <Trash2 size={18} />
-                </button>
+              <div className="flex flex-col gap-1">
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => handleMove(categories!.indexOf(category), 'up')}
+                    disabled={categories?.indexOf(category) === 0}
+                    className="p-1.5 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-lg transition-all disabled:opacity-20"
+                  >
+                    <ArrowUp size={16} />
+                  </button>
+                  <button 
+                    onClick={() => handleMove(categories!.indexOf(category), 'down')}
+                    disabled={categories?.indexOf(category) === categories!.length - 1}
+                    className="p-1.5 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-lg transition-all disabled:opacity-20"
+                  >
+                    <ArrowDown size={16} />
+                  </button>
+                </div>
+                <div className="flex gap-1">
+                  <button 
+                    onClick={() => handleStartEdit(category)}
+                    className="p-2 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-xl transition-all"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  <button 
+                    onClick={() => { if(confirm('Excluir categoria?')) deleteMutation.mutate({ id: category.id }) }}
+                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </div>
             </div>
 
