@@ -30,11 +30,13 @@ export const ordersRouter = router({
       
       if (!order) return null;
 
-      const [customer] = await db.select().from(customers)
-        .where(eq(customers.id, order.customerId));
+      const customer = order.customerId 
+        ? await db.select().from(customers).where(eq(customers.id, order.customerId)).then(res => res[0])
+        : null;
 
-      const [restaurant] = await db.select().from(restaurants)
-        .where(eq(restaurants.id, order.restaurantId));
+      const restaurant = order.restaurantId 
+        ? await db.select().from(restaurants).where(eq(restaurants.id, order.restaurantId)).then(res => res[0])
+        : null;
 
       return {
         ...order,
