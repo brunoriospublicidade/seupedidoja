@@ -89,10 +89,6 @@ export const productsRouter = router({
       await db.delete(products).where(eq(products.id, input.id));
       return true;
     }),
-
-      return await db.insert(products).values(values).returning();
-    }),
-
   upsertProducts: publicProcedure
     .input(z.array(z.object({
       name: z.string(),
