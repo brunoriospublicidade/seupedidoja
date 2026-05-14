@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { products, subcategories, restaurants } from '../db/schema';
 import { eq, asc } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 
 export const productsRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
@@ -165,7 +166,13 @@ export const productsRouter = router({
       const [restaurant] = await db.select().from(restaurants)
         .where(eq(restaurants.id, restaurantId));
       
-      if (!restaurant || restaurant.password !== input.password) {
+      if (!restaurant || !restaurant.password) {
+        throw new Error('Configuração de segurança não encontrada.');
+      }
+
+      const isPasswordValid = await bcrypt.compare(input.password, restaurant.password);
+      
+      if (!isPasswordValid) {
         throw new Error('Senha incorreta. O cardápio não foi resetado.');
       }
 
