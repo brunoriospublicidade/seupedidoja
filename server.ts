@@ -30,8 +30,12 @@ const checkDb = async () => {
       await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
       await db.execute(sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS password TEXT;`);
       await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS password TEXT;`);
+      await db.execute(sql`ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS pagbank_token TEXT;`);
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS address TEXT;`);
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS neighborhood TEXT;`);
+      await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT DEFAULT 'delivery';`);
+      await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'pending';`);
+      await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pagbank_order_id TEXT;`);
       await db.execute(sql`ALTER TABLE customer_addresses ADD COLUMN IF NOT EXISTS city TEXT;`);
       await db.execute(sql`ALTER TABLE customer_addresses ADD COLUMN IF NOT EXISTS state TEXT;`);
       console.log('[LOG] Manual migrations applied successfully');

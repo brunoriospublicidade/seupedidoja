@@ -31,6 +31,7 @@ export const restaurants = pgTable('restaurants', {
   evolutionInstance: text('evolution_instance'),
   role: text('role').default('user'),
   password: text('password'),
+  pagbankToken: text('pagbank_token'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -124,6 +125,9 @@ export const orders = pgTable('orders', {
   address: text('address'), // Added to store order delivery address
   neighborhood: text('neighborhood'), // Added to store order delivery neighborhood
   status: text('status').default('pending'),
+  paymentMethod: text('payment_method').default('delivery'),
+  paymentStatus: text('payment_status').default('pending'),
+  pagbankOrderId: text('pagbank_order_id'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

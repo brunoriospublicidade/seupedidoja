@@ -227,6 +227,7 @@ export const restaurantsRouter = router({
       delivery_config: z.any().optional(),
       email: z.string().optional(),
       password: z.string().optional(),
+      pagbank_token: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
@@ -263,6 +264,7 @@ export const restaurantsRouter = router({
       if (input.delivery_config !== undefined) mappedData.deliveryConfig = input.delivery_config;
       if (input.email !== undefined) mappedData.email = input.email;
       if (input.password !== undefined) mappedData.password = input.password;
+      if (input.pagbank_token !== undefined) mappedData.pagbankToken = input.pagbank_token;
       
       console.log('[UPDATE DEBUG] Restaurant ID:', targetId);
       console.log('[UPDATE DEBUG] Mapped Data:', mappedData);

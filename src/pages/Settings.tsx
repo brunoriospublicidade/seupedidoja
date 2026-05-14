@@ -128,7 +128,8 @@ const SettingsPage = () => {
         city: restaurant.city || '',
         state: restaurant.state || '',
         email: restaurant.email || '',
-        password: restaurant.password || ''
+        password: restaurant.password || '',
+        pagbank_token: (restaurant as any).pagbankToken || ''
       });
     }
   }, [restaurant, formData]);
@@ -195,6 +196,7 @@ const SettingsPage = () => {
       evolution_api_url: formData.evolution_api_url,
       evolution_api_key: formData.evolution_api_key,
       evolution_instance: formData.evolution_instance,
+      pagbank_token: formData.pagbank_token,
       cep: formData.cep,
       address: formData.address,
       complement: formData.complement,
@@ -251,7 +253,7 @@ const SettingsPage = () => {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'identity' | 'delivery' | 'hours' | 'whatsapp' | 'billing' | 'security'>('identity');
+  const [activeTab, setActiveTab] = useState<'identity' | 'delivery' | 'hours' | 'whatsapp' | 'payments' | 'billing' | 'security'>('identity');
 
   if (loadingRestaurant || loadingPlans || !formData) return <div className="p-8 text-center text-slate-400">Carregando configurações...</div>;
 
@@ -260,6 +262,7 @@ const SettingsPage = () => {
     { id: 'delivery', label: 'Endereço e Entrega', icon: MapPin },
     { id: 'hours', label: 'Horários', icon: Clock },
     { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+    { id: 'payments', label: 'Pagamentos', icon: CreditCard },
     { id: 'security', label: 'Segurança', icon: ShieldCheck },
     { id: 'billing', label: 'Minha Assinatura', icon: CreditCard },
   ];
@@ -674,6 +677,55 @@ const SettingsPage = () => {
                     </div>
                   );
                 })}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'payments' && (
+            <motion.div
+              key="payments"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-8"
+            >
+              <div className="bg-white dark:bg-slate-900 p-8 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 space-y-8">
+                <div className="flex items-center gap-4 p-6 bg-slate-50 dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800">
+                  <div className="p-4 bg-primary/10 rounded-2xl">
+                    <CreditCard size={32} className="text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-800 dark:text-white uppercase tracking-tight">Receber via PagBank</h3>
+                    <p className="text-sm text-slate-500">Configure seu token do PagBank para receber pagamentos via Pix direto na sua conta.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">Token da API PagBank</label>
+                    <div className="relative">
+                      <input 
+                        type="password" 
+                        value={formData.pagbank_token} 
+                        onChange={(e) => setFormData({...formData, pagbank_token: e.target.value})} 
+                        placeholder="Insira seu token do PagBank"
+                        className="w-full p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 outline-none focus:ring-2 focus:ring-primary/20 dark:text-white font-mono" 
+                      />
+                      <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Você pode obter seu token no painel do PagBank em "Vendas Online" > "Integrações".</p>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-amber-50 dark:bg-amber-950/30 rounded-3xl border border-amber-100 dark:border-amber-900/50 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-black uppercase text-[10px] tracking-widest">
+                    <ShieldCheck size={14} />
+                    Informação Importante
+                  </div>
+                  <p className="text-sm text-amber-800 dark:text-amber-200/70 font-medium">
+                    Ao configurar o PagBank, a opção de pagamento via Pix será habilitada automaticamente no seu cardápio. Os valores cairão instantaneamente na sua conta PagBank.
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}

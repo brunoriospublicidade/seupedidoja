@@ -343,6 +343,10 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const [orderComplete, setOrderComplete] = useState(false);
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<any>(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<'delivery' | 'online'>('delivery');
+  const [pixData, setPixData] = useState<{qrCode: string, qrCodeImage: string, paymentId: string} | null>(null);
+  const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   // Auth & Profile State
   const [loggedCustomer, setLoggedCustomer] = useState<any>(null);
@@ -471,18 +475,28 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: (data) => {
-      setOrderComplete(true);
-      setCart([]);
-      setAppliedCoupon(null);
-      setCouponCode('');
-      toast.success('Pedido enviado com sucesso!');
+      setCurrentOrderId(data.id);
       
-      // Redirecionar para o acompanhamento após um pequeno delay para mostrar o toast
-      setTimeout(() => {
-        if (data?.id) {
-          setLocation(`/tracking/${data.id}`);
-        }
-      }, 1500);
+      if (paymentMethod === 'online' && menu?.restaurant.pagbankToken) {
+        generatePix.mutate({
+          orderId: data.id,
+          restaurantId: menu.restaurant.id,
+          amount: totalPrice,
+          customerName: customer.name
+        });
+      } else {
+        setOrderComplete(true);
+        setCart([]);
+        setAppliedCoupon(null);
+        setCouponCode('');
+        toast.success('Pedido enviado com sucesso!');
+        
+        setTimeout(() => {
+          if (data?.id) {
+            setLocation(`/tracking/${data.id}`);
+          }
+        }, 1500);
+      }
     },
     onError: (err) => {
       toast.error('Erro ao enviar pedido: ' + err.message);
@@ -496,6 +510,32 @@ const PublicMenu = ({ slug }: { slug: string }) => {
         toast.success('Cupom aplicado com sucesso!');
       } else if ('message' in res) {
         toast.error(res.message);
+      }
+    }
+  });
+
+  const generatePix = trpc.payments.createPagBankPixPayment.useMutation({
+    onSuccess: (data) => {
+      setPixData(data);
+      setIsPixModalOpen(true);
+    },
+    onError: (err) => toast.error('Erro ao gerar Pix: ' + err.message)
+  });
+
+  const checkPixStatus = trpc.payments.checkPagBankPayment.useMutation({
+    onSuccess: (res) => {
+      if (res.isPaid) {
+        toast.success('Pagamento confirmado!');
+        setIsPixModalOpen(false);
+        setOrderComplete(true);
+        setCart([]);
+        setAppliedCoupon(null);
+        setCouponCode('');
+        if (currentOrderId) {
+           setLocation(`/tracking/${currentOrderId}`);
+        }
+      } else {
+        toast.error('Pagamento ainda não identificado.');
       }
     }
   });
@@ -588,6 +628,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
       total: totalPrice,
       couponId: appliedCoupon?.id,
       customerId: loggedCustomer?.id,
+      paymentMethod: paymentMethod,
       customer: {
         ...customer,
         neighborhood: selectedNeighborhood?.name || '',
@@ -1059,6 +1100,40 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                         </>
                       ) : null}
 
+                      {/* Payment Method Selection */}
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                          <CreditCard size={12} className="text-primary" /> Forma de Pagamento
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button 
+                            onClick={() => setPaymentMethod('delivery')}
+                            className={`p-4 rounded-2xl border transition-all text-left flex flex-col gap-1 ${
+                              paymentMethod === 'delivery'
+                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                              : 'border-slate-100 bg-white'
+                            }`}
+                          >
+                            <div className="text-xs font-black text-slate-800 uppercase tracking-tight">Na Entrega</div>
+                            <div className="text-[10px] text-slate-500 font-medium">Pague ao motoboy</div>
+                          </button>
+
+                          {(menu.restaurant as any).pagbankToken && (
+                            <button 
+                              onClick={() => setPaymentMethod('online')}
+                              className={`p-4 rounded-2xl border transition-all text-left flex flex-col gap-1 ${
+                                paymentMethod === 'online'
+                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                : 'border-slate-100 bg-white'
+                              }`}
+                            >
+                              <div className="text-xs font-black text-slate-800 uppercase tracking-tight">Online (Pix)</div>
+                              <div className="text-[10px] text-slate-500 font-medium">Pague agora via Pix</div>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Coupon Field */}
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
@@ -1439,6 +1514,56 @@ const PublicMenu = ({ slug }: { slug: string }) => {
                   <LogOut size={16} />
                   Sair da Conta
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Pix Payment Modal */}
+      <AnimatePresence>
+        {isPixModalOpen && pixData && (
+          <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center p-0 md:p-4 bg-black/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              className="bg-white w-full max-w-md rounded-t-[40px] md:rounded-[40px] overflow-hidden p-8 space-y-8"
+            >
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                  <CreditCard size={32} />
+                </div>
+                <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Pagamento via Pix</h3>
+                <p className="text-sm text-slate-500">Escaneie o código abaixo para finalizar seu pedido.</p>
+              </div>
+
+              <div className="flex justify-center p-4 bg-slate-50 rounded-3xl border border-slate-100">
+                <img src={pixData.qrCodeImage} alt="QR Code Pix" className="w-48 h-48" />
+              </div>
+
+              <div className="space-y-3">
+                 <button 
+                   onClick={() => {
+                     navigator.clipboard.writeText(pixData.qrCode);
+                     toast.success('Código copiado!');
+                   }}
+                   className="w-full py-4 bg-slate-100 text-slate-800 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2"
+                 >
+                   Copiar Código Pix
+                 </button>
+                 <button 
+                   onClick={() => checkPixStatus.mutate({ 
+                     pagbankOrderId: pixData.paymentId, 
+                     restaurantId: menu.restaurant.id,
+                     localOrderId: currentOrderId!
+                   })}
+                   disabled={checkPixStatus.isLoading}
+                   className="w-full py-5 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2"
+                 >
+                   {checkPixStatus.isLoading ? <Loader2 className="animate-spin" /> : <CheckCircle2 size={20} />}
+                   Já paguei o Pix
+                 </button>
               </div>
             </motion.div>
           </div>

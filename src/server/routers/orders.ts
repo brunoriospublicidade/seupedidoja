@@ -73,7 +73,9 @@ export const ordersRouter = router({
         phone: z.string(),
         address: z.string().optional(),
         neighborhood: z.string().optional(),
-      })
+      }),
+      paymentMethod: z.string().optional(),
+      pagbankOrderId: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       console.log('[ORDER ATTEMPT] Input:', JSON.stringify(input, null, 2));
@@ -128,8 +130,10 @@ export const ordersRouter = router({
           customerId: customerId,
           items: input.items,
           total: input.total.toString(),
-          address: input.customer.address,
-          neighborhood: input.customer.neighborhood,
+          address: input.customer.address || '',
+          neighborhood: input.customer.neighborhood || '',
+          paymentMethod: input.paymentMethod || 'delivery',
+          pagbankOrderId: input.pagbankOrderId,
           status: 'pending'
         }).returning();
 
