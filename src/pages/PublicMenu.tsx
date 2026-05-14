@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
-import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2, Ticket, Lock, UserPlus, LogOut, Map, LogIn, ClipboardList, Settings, ChevronRight, Trash2 } from 'lucide-react';
+import { Search, ShoppingBag, ChevronLeft, Star, Clock, Info, Plus, Minus, X, User, MapPin, Phone, Send, CheckCircle2, Ticket, Lock, UserPlus, LogOut, Map, LogIn, ClipboardList, Settings, ChevronRight, Trash2, CreditCard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trpc } from '../lib/trpc';
@@ -344,7 +344,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<any>(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<'delivery' | 'online'>('delivery');
-  const [pixData, setPixData] = useState<{qrCode: string, qrCodeImage: string, paymentId: string} | null>(null);
+  const [pixData, setPixData] = useState<{qrCode: string, qrCodeImage?: string, paymentId: string} | null>(null);
   const [isPixModalOpen, setIsPixModalOpen] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
@@ -516,7 +516,7 @@ const PublicMenu = ({ slug }: { slug: string }) => {
 
   const generatePix = trpc.payments.createPagBankPixPayment.useMutation({
     onSuccess: (data) => {
-      setPixData(data);
+      setPixData(data as any);
       setIsPixModalOpen(true);
     },
     onError: (err) => toast.error('Erro ao gerar Pix: ' + err.message)
