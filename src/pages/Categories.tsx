@@ -190,8 +190,6 @@ const CategoriesPage = () => {
                     <span className="text-slate-500 font-mono uppercase text-sm font-bold tracking-wider">{formData.color}</span>
                   </div>
                 </div>
-
-                </div>
               </div>
 
               <div className="space-y-4">
