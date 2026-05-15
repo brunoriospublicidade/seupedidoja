@@ -2,7 +2,7 @@ import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { db } from '../db';
 import { products, subcategories, restaurants } from '../db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, inArray } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 
 export const productsRouter = router({
@@ -10,18 +10,22 @@ export const productsRouter = router({
     const restaurantId = ctx.restaurantId;
     if (!restaurantId) return [];
 
-    const res = await db.select({
-      product: products,
-      subcategory: subcategories
-    })
-    .from(products)
-    .leftJoin(subcategories, eq(products.subcategoryId, subcategories.id))
-    .where(eq(products.restaurantId, restaurantId))
-    .orderBy(asc(products.name));
+    const resProducts = await db.select().from(products)
+      .where(eq(products.restaurantId, restaurantId))
+      .orderBy(asc(products.name));
     
-    return res.map(row => ({
-      ...row.product,
-      subcategories: row.subcategory
+    // Fetch only subcategories that belong to these products
+    const subcategoryIds = [...new Set(resProducts.map(p => p.subcategoryId).filter(Boolean) as string[])];
+    
+    let resSubcategories: any[] = [];
+    if (subcategoryIds.length > 0) {
+      resSubcategories = await db.select().from(subcategories)
+        .where(inArray(subcategories.id, subcategoryIds));
+    }
+
+    return resProducts.map(prod => ({
+      ...prod,
+      subcategories: resSubcategories.find(sub => sub.id === prod.subcategoryId) || null
     }));
   }),
     
@@ -89,8 +93,10 @@ export const productsRouter = router({
   delete: publicProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      await db.delete(products).where(eq(products.id, input.id));
-      return true;
+      const [deleted] = await db.delete(products)
+        .where(eq(products.id, input.id))
+        .returning();
+      return deleted;
     }),
   upsertProducts: publicProcedure
     .input(z.array(z.object({

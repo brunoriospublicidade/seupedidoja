@@ -32,8 +32,8 @@ const BulkEditModal = ({ isOpen, onClose, categories, products, optionalGroups }
   
   const utils = trpc.useContext();
   const bulkUpdateMutation = trpc.products.bulkUpdateOptionals.useMutation({
-    onSuccess: async (res) => {
-      await utils.products.list.invalidate();
+    onSuccess: (res) => {
+      utils.products.list.invalidate();
       toast.success(`Sucesso! ${res.count} produtos atualizados.`);
       onClose();
       resetState();

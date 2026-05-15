@@ -11,6 +11,7 @@ import LoadingScreen from '../components/LoadingScreen';
 const MenuPage = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -58,8 +59,8 @@ const MenuPage = () => {
   }, [products, categories, searchTerm]);
 
   const resetMutation = trpc.products.resetMenu.useMutation({
-    onSuccess: async () => {
-      await utils.products.list.invalidate();
+    onSuccess: () => {
+      utils.products.list.invalidate();
       toast.success('Todo o cardápio foi resetado com sucesso!');
       setIsResetModalOpen(false);
       setResetPassword('');
@@ -94,24 +95,39 @@ const MenuPage = () => {
   };
 
   const createMutation = trpc.products.create.useMutation({
-    onSuccess: async () => {
-      await utils.products.list.invalidate();
+    onSuccess: () => {
+      utils.products.list.invalidate();
       toast.success('Produto adicionado ao cardápio!');
       closeForm();
     }
   });
 
   const updateMutation = trpc.products.update.useMutation({
-    onSuccess: async () => {
-      await utils.products.list.invalidate();
+    onSuccess: () => {
+      utils.products.list.invalidate();
       toast.success('Produto atualizado!');
       closeForm();
     }
   });
 
   const deleteMutation = trpc.products.delete.useMutation({
-    onSuccess: async () => {
-      await utils.products.list.invalidate();
+    onSuccess: () => {
+      utils.products.list.invalidate();
+      toast.success('Produto removido');
+    }
+  });
+
+  const updateMutation = trpc.products.update.useMutation({
+    onSuccess: () => {
+      utils.products.list.invalidate();
+      toast.success('Produto atualizado!');
+      closeForm();
+    }
+  });
+
+  const deleteMutation = trpc.products.delete.useMutation({
+    onSuccess: () => {
+      utils.products.list.invalidate();
       toast.success('Produto removido');
     }
   });
@@ -137,13 +153,12 @@ const MenuPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja remover este produto?')) {
-      try {
-        await deleteMutation.mutateAsync({ id });
-      } catch (error) {
-        toast.error('Erro ao excluir produto');
-      }
+      setDeletingId(id);
+      deleteMutation.mutate({ id }, {
+        onSettled: () => setDeletingId(null)
+      });
     }
   };
 
@@ -636,11 +651,11 @@ const MenuPage = () => {
                               <Pencil size={18} />
                             </button>
                             <button 
-                              disabled={deleteMutation.isLoading}
+                              disabled={!!deletingId}
                               onClick={() => handleDelete(product.id)}
                               className="p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl shadow-lg text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors disabled:opacity-50"
                             >
-                              {deleteMutation.isLoading ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                              {deletingId === product.id ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
                             </button>
                           </div>
                         </div>
