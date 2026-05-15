@@ -58,8 +58,8 @@ const MenuPage = () => {
   }, [products, categories, searchTerm]);
 
   const resetMutation = trpc.products.resetMenu.useMutation({
-    onSuccess: () => {
-      utils.products.list.invalidate();
+    onSuccess: async () => {
+      await utils.products.list.invalidate();
       toast.success('Todo o cardápio foi resetado com sucesso!');
       setIsResetModalOpen(false);
       setResetPassword('');
@@ -94,24 +94,24 @@ const MenuPage = () => {
   };
 
   const createMutation = trpc.products.create.useMutation({
-    onSuccess: () => {
-      utils.products.list.invalidate();
+    onSuccess: async () => {
+      await utils.products.list.invalidate();
       toast.success('Produto adicionado ao cardápio!');
       closeForm();
     }
   });
 
   const updateMutation = trpc.products.update.useMutation({
-    onSuccess: () => {
-      utils.products.list.invalidate();
+    onSuccess: async () => {
+      await utils.products.list.invalidate();
       toast.success('Produto atualizado!');
       closeForm();
     }
   });
 
   const deleteMutation = trpc.products.delete.useMutation({
-    onSuccess: () => {
-      utils.products.list.invalidate();
+    onSuccess: async () => {
+      await utils.products.list.invalidate();
       toast.success('Produto removido');
     }
   });
@@ -137,9 +137,13 @@ const MenuPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja remover este produto?')) {
-      deleteMutation.mutate({ id });
+      try {
+        await deleteMutation.mutateAsync({ id });
+      } catch (error) {
+        toast.error('Erro ao excluir produto');
+      }
     }
   };
 
@@ -632,10 +636,11 @@ const MenuPage = () => {
                               <Pencil size={18} />
                             </button>
                             <button 
+                              disabled={deleteMutation.isLoading}
                               onClick={() => handleDelete(product.id)}
-                              className="p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl shadow-lg text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors"
+                              className="p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl shadow-lg text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors disabled:opacity-50"
                             >
-                              <Trash2 size={18} />
+                              {deleteMutation.isLoading ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
                             </button>
                           </div>
                         </div>

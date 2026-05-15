@@ -25,39 +25,39 @@ const CategoriesPage = () => {
   }, [categories, editingId]);
 
   const createMutation = trpc.categories.create.useMutation({
-    onSuccess: () => {
-      utils.categories.list.invalidate();
+    onSuccess: async () => {
+      await utils.categories.list.invalidate();
       toast.success('Categoria criada!');
       closeForm();
     }
   });
 
   const updateMutation = trpc.categories.update.useMutation({
-    onSuccess: () => {
-      utils.categories.list.invalidate();
+    onSuccess: async () => {
+      await utils.categories.list.invalidate();
       toast.success('Categoria atualizada!');
       closeForm();
     }
   });
 
   const deleteMutation = trpc.categories.delete.useMutation({
-    onSuccess: () => {
-      utils.categories.list.invalidate();
+    onSuccess: async () => {
+      await utils.categories.list.invalidate();
       toast.success('Categoria removida');
     }
   });
 
   const createSubMutation = trpc.categories.createSubcategory.useMutation({
-    onSuccess: () => {
-      utils.categories.list.invalidate();
+    onSuccess: async () => {
+      await utils.categories.list.invalidate();
       toast.success('Subcategoria adicionada!');
       setNewSubName('');
     }
   });
 
   const swapOrderMutation = trpc.categories.swapOrder.useMutation({
-    onSuccess: () => {
-      utils.categories.list.invalidate();
+    onSuccess: async () => {
+      await utils.categories.list.invalidate();
     }
   });
 
@@ -78,8 +78,8 @@ const CategoriesPage = () => {
   };
 
   const deleteSubMutation = trpc.categories.deleteSubcategory.useMutation({
-    onSuccess: () => {
-      utils.categories.list.invalidate();
+    onSuccess: async () => {
+      await utils.categories.list.invalidate();
       toast.success('Subcategoria removida');
     }
   });

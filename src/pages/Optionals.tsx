@@ -38,39 +38,39 @@ const OptionalsPage = () => {
   };
 
   const createGroupMutation = trpc.optionals.createGroup.useMutation({
-    onSuccess: () => {
-      utils.optionals.listGroups.invalidate();
+    onSuccess: async () => {
+      await utils.optionals.listGroups.invalidate();
       toast.success('Grupo de opcionais criado!');
       closeForm();
     }
   });
 
   const updateGroupMutation = trpc.optionals.updateGroup.useMutation({
-    onSuccess: () => {
-      utils.optionals.listGroups.invalidate();
+    onSuccess: async () => {
+      await utils.optionals.listGroups.invalidate();
       toast.success('Grupo atualizado!');
       closeForm();
     }
   });
 
   const deleteGroupMutation = trpc.optionals.deleteGroup.useMutation({
-    onSuccess: () => {
-      utils.optionals.listGroups.invalidate();
+    onSuccess: async () => {
+      await utils.optionals.listGroups.invalidate();
       toast.success('Grupo removido');
     }
   });
 
   const createItemMutation = trpc.optionals.createItem.useMutation({
-    onSuccess: () => {
-      utils.optionals.listGroups.invalidate();
+    onSuccess: async () => {
+      await utils.optionals.listGroups.invalidate();
       toast.success('Item adicionado!');
       setNewItemData({ name: '', price: '' });
     }
   });
 
   const deleteItemMutation = trpc.optionals.deleteItem.useMutation({
-    onSuccess: () => {
-      utils.optionals.listGroups.invalidate();
+    onSuccess: async () => {
+      await utils.optionals.listGroups.invalidate();
       toast.success('Item removido');
     }
   });
