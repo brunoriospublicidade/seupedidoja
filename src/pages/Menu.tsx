@@ -117,21 +117,6 @@ const MenuPage = () => {
     }
   });
 
-  const updateMutation = trpc.products.update.useMutation({
-    onSuccess: () => {
-      utils.products.list.invalidate();
-      toast.success('Produto atualizado!');
-      closeForm();
-    }
-  });
-
-  const deleteMutation = trpc.products.delete.useMutation({
-    onSuccess: () => {
-      utils.products.list.invalidate();
-      toast.success('Produto removido');
-    }
-  });
-
   const closeForm = () => {
     setIsAdding(false);
     setEditingProduct(null);
