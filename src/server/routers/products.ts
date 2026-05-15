@@ -181,4 +181,23 @@ export const productsRouter = router({
 
       return { success: true };
     }),
+  bulkUpdateOptionals: publicProcedure
+    .input(z.object({
+      productIds: z.array(z.string()),
+      optionalGroupIds: z.array(z.string()),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const restaurantId = ctx.restaurantId;
+      if (!restaurantId) throw new Error('Restaurant session not found');
+
+      const { productIds, optionalGroupIds } = input;
+
+      for (const id of productIds) {
+        await db.update(products)
+          .set({ optionals: optionalGroupIds })
+          .where(eq(products.id, id));
+      }
+
+      return { success: true, count: productIds.length };
+    }),
 });

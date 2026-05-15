@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Plus, Search, Filter, ImageIcon, DollarSign, Tag, ListChecks, Loader2, ListFilter, X, Pencil, Trash2, Layers, ChevronDown, ChevronUp, FileUp, Download, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, ImageIcon, DollarSign, Tag, ListChecks, Loader2, ListFilter, X, Pencil, Trash2, Layers, ChevronDown, ChevronUp, FileUp, Download, AlertTriangle, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trpc } from '../lib/trpc';
 import { uploadImage } from '../lib/storage';
 import * as XLSX from 'xlsx';
+import BulkEditModal from '../components/BulkEditModal';
 
 const MenuPage = () => {
   const [isAdding, setIsAdding] = useState(false);
@@ -14,6 +15,7 @@ const MenuPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [resetPassword, setResetPassword] = useState('');
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -337,6 +339,14 @@ const MenuPage = () => {
           >
             <Download size={18} />
             Modelo
+          </button>
+          
+          <button 
+            onClick={() => setIsBulkEditOpen(true)}
+            className="flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-5 py-3 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+          >
+            <Edit3 size={18} />
+            Edição em Massa
           </button>
           
           <button 
@@ -722,6 +732,14 @@ const MenuPage = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <BulkEditModal 
+        isOpen={isBulkEditOpen}
+        onClose={() => setIsBulkEditOpen(false)}
+        categories={categories || []}
+        products={products || []}
+        optionalGroups={optionalGroups || []}
+      />
     </div>
   );
 };
