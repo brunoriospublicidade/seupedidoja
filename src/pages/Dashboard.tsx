@@ -19,6 +19,7 @@ import { motion } from 'framer-motion';
 import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
+import LoadingScreen from '../components/LoadingScreen';
 
 const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
   <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:shadow-black/5 transition-all group">
@@ -51,8 +52,10 @@ const DashboardPage = () => {
   const [prevOrdersCount, setPrevOrdersCount] = useState(0);
   
   const { data: orders } = trpc.orders.list.useQuery(undefined, {
-    refetchInterval: 10000, // Polling a cada 10 segundos
+    refetchInterval: 10000, 
   });
+
+  if (!restaurant || !products || !categories) return <LoadingScreen message="Preparando dashboard..." />;
 
   const today = new Date().toISOString().split('T')[0];
   const todayOrders = orders?.filter((o: any) => o.createdAt.startsWith(today)) || [];

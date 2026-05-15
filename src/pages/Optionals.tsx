@@ -3,6 +3,7 @@ import { Plus, Trash2, DollarSign, ListFilter, X, Pencil, Save, ListChecks, Info
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trpc } from '../lib/trpc';
+import LoadingScreen from '../components/LoadingScreen';
 
 const OptionalsPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -112,7 +113,7 @@ const OptionalsPage = () => {
     });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-slate-400">Carregando opcionais...</div>;
+  if (isLoading) return <LoadingScreen message="Carregando opcionais..." />;
 
   return (
     <div className="space-y-8 pb-20">

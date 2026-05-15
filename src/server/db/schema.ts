@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, decimal, integer, boolean, jsonb, uniqueIndex, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, decimal, integer, boolean, jsonb, uniqueIndex, unique, index } from 'drizzle-orm/pg-core';
 
 export const restaurants = pgTable('restaurants', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -33,6 +33,10 @@ export const restaurants = pgTable('restaurants', {
   password: text('password'),
   pagbankToken: text('pagbank_token'),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    slugIdx: index('restaurants_slug_idx').on(table.slug),
+  };
 });
 
 export const categories = pgTable('categories', {
@@ -43,6 +47,10 @@ export const categories = pgTable('categories', {
   order: integer('order').default(0),
   parentId: uuid('parent_id'),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    restaurantIdIdx: index('categories_restaurant_id_idx').on(table.restaurantId),
+  };
 });
 
 export const products = pgTable('products', {
@@ -56,6 +64,11 @@ export const products = pgTable('products', {
   imageUrl: text('image_url'),
   optionals: jsonb('optionals'), 
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    restaurantIdIdx: index('products_restaurant_id_idx').on(table.restaurantId),
+    categoryIdIdx: index('products_category_id_idx').on(table.categoryId),
+  };
 });
 
 export const subcategories = pgTable('subcategories', {
@@ -64,6 +77,10 @@ export const subcategories = pgTable('subcategories', {
   name: text('name').notNull(),
   order: integer('order').default(0),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    categoryIdIdx: index('subcategories_category_id_idx').on(table.categoryId),
+  };
 });
 
 export const optionalGroups = pgTable('optional_groups', {
@@ -73,6 +90,10 @@ export const optionalGroups = pgTable('optional_groups', {
   isMandatory: boolean('is_mandatory').default(false),
   maxSelection: integer('max_selection').default(1),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    restaurantIdIdx: index('optional_groups_restaurant_id_idx').on(table.restaurantId),
+  };
 });
 
 export const optionalItems = pgTable('optional_items', {
@@ -81,6 +102,10 @@ export const optionalItems = pgTable('optional_items', {
   name: text('name').notNull(),
   price: decimal('price', { precision: 10, scale: 2 }).default('0'),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    groupIdIdx: index('optional_items_group_id_idx').on(table.groupId),
+  };
 });
 
 export const settings = pgTable('settings', {
@@ -100,6 +125,11 @@ export const customers = pgTable('customers', {
   neighborhood: text('neighborhood'),
   password: text('password'),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    restaurantIdIdx: index('customers_restaurant_id_idx').on(table.restaurantId),
+    phoneIdx: index('customers_phone_idx').on(table.phone),
+  };
 });
 
 export const customerAddresses = pgTable('customer_addresses', {
@@ -114,6 +144,10 @@ export const customerAddresses = pgTable('customer_addresses', {
   city: text('city').notNull(),
   state: text('state').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    customerIdIdx: index('customer_addresses_customer_id_idx').on(table.customerId),
+  };
 });
 
 export const orders = pgTable('orders', {
@@ -122,13 +156,19 @@ export const orders = pgTable('orders', {
   customerId: uuid('customer_id').references(() => customers.id),
   items: jsonb('items').notNull(),
   total: decimal('total', { precision: 10, scale: 2 }).notNull(),
-  address: text('address'), // Added to store order delivery address
-  neighborhood: text('neighborhood'), // Added to store order delivery neighborhood
+  address: text('address'), 
+  neighborhood: text('neighborhood'),
   status: text('status').default('pending'),
   paymentMethod: text('payment_method').default('delivery'),
   paymentStatus: text('payment_status').default('pending'),
   pagbankOrderId: text('pagbank_order_id'),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    restaurantIdIdx: index('orders_restaurant_id_idx').on(table.restaurantId),
+    customerIdIdx: index('orders_customer_id_idx').on(table.customerId),
+    createdAtIdx: index('orders_created_at_idx').on(table.createdAt),
+  };
 });
 
 export const plans = pgTable('plans', {
@@ -153,4 +193,8 @@ export const coupons = pgTable('coupons', {
   usageCount: integer('usage_count').default(0),
   active: boolean('active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    restaurantIdIdx: index('coupons_restaurant_id_idx').on(table.restaurantId),
+  };
 });

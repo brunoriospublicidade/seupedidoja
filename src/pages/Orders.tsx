@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import LoadingScreen from '../components/LoadingScreen';
 
 const statusConfig: any = {
   pending: { label: 'Novos', color: 'bg-rose-500', icon: <Bell size={18} />, textColor: 'text-rose-500' },
@@ -66,11 +67,7 @@ const OrdersPage = () => {
     }
   });
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-screen -mt-20">
-      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (isLoading) return <LoadingScreen message="Sintonizando pedidos..." />;
 
   const getOrdersByStatus = (status: string) => {
     return orders?.filter((o: any) => o.status === status) || [];

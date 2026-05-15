@@ -2,7 +2,7 @@ import { router, publicProcedure } from '../trpc';
 import { z } from 'zod';
 import { db } from '../db';
 import { categories, subcategories, products } from '../db/schema';
-import { eq, and, asc } from 'drizzle-orm';
+import { eq, and, asc, inArray } from 'drizzle-orm';
 
 export const categoriesRouter = router({
   list: publicProcedure.query(async ({ ctx }) => {
@@ -14,8 +14,13 @@ export const categoriesRouter = router({
       .where(eq(categories.restaurantId, restaurantId))
       .orderBy(asc(categories.order));
     
-    // Fetch subcategories
-    const resSubcategories = await db.select().from(subcategories);
+    if (resCategories.length === 0) return [];
+
+    const categoryIds = resCategories.map(c => c.id);
+    
+    // Fetch subcategories scoped to these categories
+    const resSubcategories = await db.select().from(subcategories)
+      .where(inArray(subcategories.categoryId, categoryIds));
 
     // Fetch products to count them per category
     const resProducts = await db.select().from(products)

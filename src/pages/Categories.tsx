@@ -3,6 +3,7 @@ import { Plus, LayoutGrid, Hash, Layers, X, PlusCircle, Pencil, Trash2, Save, Pa
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trpc } from '../lib/trpc';
+import LoadingScreen from '../components/LoadingScreen';
 
 const CategoriesPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -116,7 +117,7 @@ const CategoriesPage = () => {
     createSubMutation.mutate({ category_id: editingId, name: newSubName });
   };
 
-  if (isLoading) return <div className="p-8 text-center text-slate-400">Carregando categorias...</div>;
+  if (isLoading) return <LoadingScreen message="Carregando categorias..." />;
 
   return (
     <div className="space-y-8 pb-20">

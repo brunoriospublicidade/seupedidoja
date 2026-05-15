@@ -6,6 +6,7 @@ import { trpc } from '../lib/trpc';
 import { uploadImage } from '../lib/storage';
 import * as XLSX from 'xlsx';
 import BulkEditModal from '../components/BulkEditModal';
+import LoadingScreen from '../components/LoadingScreen';
 
 const MenuPage = () => {
   const [isAdding, setIsAdding] = useState(false);
@@ -323,7 +324,7 @@ const MenuPage = () => {
     setExpandedCategoryId(prev => prev === catId ? null : catId);
   };
 
-  if (loadingProducts) return <div className="p-8 text-center text-slate-400">Carregando cardápio...</div>;
+  if (loadingProducts) return <LoadingScreen message="Carregando cardápio..." />;
 
   return (
     <div className="space-y-8 pb-20">

@@ -10,16 +10,18 @@ export const productsRouter = router({
     const restaurantId = ctx.restaurantId;
     if (!restaurantId) return [];
 
-    const resProducts = await db.select().from(products)
-      .where(eq(products.restaurantId, restaurantId))
-      .orderBy(asc(products.name));
+    const res = await db.select({
+      product: products,
+      subcategory: subcategories
+    })
+    .from(products)
+    .leftJoin(subcategories, eq(products.subcategoryId, subcategories.id))
+    .where(eq(products.restaurantId, restaurantId))
+    .orderBy(asc(products.name));
     
-    // Fetch subcategories to join name manually for now (or use real join)
-    const resSubcategories = await db.select().from(subcategories);
-
-    return resProducts.map(prod => ({
-      ...prod,
-      subcategories: resSubcategories.find(sub => sub.id === prod.subcategoryId) || null
+    return res.map(row => ({
+      ...row.product,
+      subcategories: row.subcategory
     }));
   }),
     
