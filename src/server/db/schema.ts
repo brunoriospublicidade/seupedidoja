@@ -32,6 +32,7 @@ export const restaurants = pgTable('restaurants', {
   role: text('role').default('user'),
   password: text('password'),
   pagbankToken: text('pagbank_token'),
+  wizardCompleted: boolean('wizard_completed').default(false),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => {
   return {

@@ -20,6 +20,7 @@ import { Link, useLocation } from 'wouter';
 import { toast } from 'sonner';
 import QRCode from 'qrcode';
 import LoadingScreen from '../components/LoadingScreen';
+import MenuWizard from '../components/MenuWizard';
 
 const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
   <div className="bg-white dark:bg-slate-900 p-6 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:shadow-black/5 transition-all group">
@@ -42,8 +43,23 @@ const DashboardPage = () => {
   const [, setLocation] = useLocation();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   
+  const utils = trpc.useContext();
   const { data: restaurant } = trpc.restaurants.get.useQuery();
+  
+  const finishWizardMutation = trpc.restaurants.finishWizard.useMutation({
+    onSuccess: () => {
+      utils.restaurants.get.invalidate();
+      setShowWizard(false);
+    }
+  });
+
+  useEffect(() => {
+    if (restaurant && !restaurant.wizardCompleted) {
+      setShowWizard(true);
+    }
+  }, [restaurant]);
   const { data: products } = trpc.products.list.useQuery();
   const { data: categories } = trpc.categories.list.useQuery();
   const { data: optionals } = trpc.optionals.listGroups.useQuery();
@@ -55,11 +71,7 @@ const DashboardPage = () => {
     refetchInterval: 10000, 
   });
 
-  if (!restaurant || !products || !categories) return <LoadingScreen message="Preparando dashboard..." />;
-
-  const today = new Date().toISOString().split('T')[0];
-  const todayOrders = orders?.filter((o: any) => o.createdAt.startsWith(today)) || [];
-  const todayRevenue = todayOrders.reduce((acc: number, o: any) => acc + Number(o.total), 0);
+  const menuUrl = restaurant?.slug ? `${window.location.origin}/menu/${restaurant.slug}` : '#';
 
   // Sistema de som para novos pedidos no Dashboard
   useEffect(() => {
@@ -80,8 +92,6 @@ const DashboardPage = () => {
     if (orders) setPrevOrdersCount(orders.length);
   }, [orders, prevOrdersCount, setLocation]);
 
-  const menuUrl = restaurant?.slug ? `${window.location.origin}/menu/${restaurant.slug}` : '#';
-
   useEffect(() => {
     if (restaurant?.slug) {
       QRCode.toDataURL(menuUrl, {
@@ -94,6 +104,12 @@ const DashboardPage = () => {
       }).then(setQrCodeUrl).catch(console.error);
     }
   }, [restaurant, menuUrl]);
+
+  if (!restaurant || !products || !categories) return <LoadingScreen message="Preparando dashboard..." />;
+
+  const today = new Date().toISOString().split('T')[0];
+  const todayOrders = orders?.filter((o: any) => o.createdAt.startsWith(today)) || [];
+  const todayRevenue = todayOrders.reduce((acc: number, o: any) => acc + Number(o.total), 0);
 
   const handleOpenMenu = () => {
     if (restaurant?.slug) {
@@ -121,6 +137,16 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-10 pb-20">
+      {showWizard && (
+        <MenuWizard 
+          restaurant={restaurant} 
+          onComplete={() => {
+            utils.restaurants.get.invalidate();
+            setShowWizard(false);
+          }}
+          onSkip={() => finishWizardMutation.mutate()}
+        />
+      )}
       <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto" />
       
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">

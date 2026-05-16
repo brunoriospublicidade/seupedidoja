@@ -433,4 +433,12 @@ export const restaurantsRouter = router({
 
       return analytics;
     }),
+  finishWizard: publicProcedure
+    .mutation(async ({ ctx }) => {
+      if (!ctx.restaurantId) throw new Error('Não autorizado');
+      await db.update(restaurants)
+        .set({ wizardCompleted: true })
+        .where(eq(restaurants.id, ctx.restaurantId));
+      return { success: true };
+    }),
 });
