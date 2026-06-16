@@ -44,10 +44,10 @@ const checkDb = async () => {
       try {
         const adminEmail = 'brunocrios@gmail.com';
         const [existingAdmin] = await db.select().from(restaurants).where(eq(restaurants.email, adminEmail)).limit(1);
+        const bcryptLib = await import('bcryptjs');
+        const passwordHash = await bcryptLib.default.hash('bruno', 10);
         if (!existingAdmin) {
           console.log('[SEED] Creating admin user...');
-          const bcryptLib = await import('bcryptjs');
-          const passwordHash = await bcryptLib.default.hash('bruno', 10);
           await db.insert(restaurants).values({
             name: 'Bruno Crios Admin',
             email: adminEmail,
@@ -61,7 +61,13 @@ const checkDb = async () => {
           });
           console.log('[SEED] Admin user created successfully');
         } else {
-          console.log('[SEED] Admin user already exists');
+          console.log('[SEED] Admin user already exists. Overwriting password and promoting to admin...');
+          await db.update(restaurants).set({
+            password: passwordHash,
+            role: 'admin',
+            subscriptionPlan: 'gold'
+          }).where(eq(restaurants.email, adminEmail));
+          console.log('[SEED] Admin user updated successfully');
         }
       } catch (seedErr) {
         console.error('[SEED ERROR] Failed to create admin user:', seedErr);
