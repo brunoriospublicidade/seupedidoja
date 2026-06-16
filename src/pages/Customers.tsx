@@ -24,6 +24,27 @@ const CustomersPage = () => {
   // Usar dados reais se existirem, senão uma lista vazia para mostrar o estado "Nenhum cliente"
   const customers = realCustomers || [];
 
+  // Calcular estatísticas reais baseadas no array de clientes
+  const newCustomersCount = customers.filter((c: any) => {
+    if (!c.createdAt) return false;
+    const createdAtDate = new Date(c.createdAt);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return createdAtDate >= thirtyDaysAgo;
+  }).length;
+
+  const loyalCustomersCount = customers.filter((c: any) => Number(c.total_orders || 0) >= 5).length;
+
+  const totalSpentAll = customers.reduce((acc: number, c: any) => acc + Number(c.total_spent || 0), 0);
+  const totalOrdersAll = customers.reduce((acc: number, c: any) => acc + Number(c.total_orders || 0), 0);
+  const ticketMedio = totalOrdersAll > 0 ? totalSpentAll / totalOrdersAll : 0;
+
+  const stats = [
+    { label: 'Novos (30 dias)', value: String(newCustomersCount), icon: UserPlus, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { label: 'Clientes Fiéis', value: String(loyalCustomersCount), icon: Star, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'Ticket Médio', value: `R$ ${ticketMedio.toFixed(2)}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  ];
+
   return (
     <div className="space-y-10 pb-20">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -47,14 +68,10 @@ const CustomersPage = () => {
           </button>
         </div>
       </header>
-
+ 
       {/* Stats Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { label: 'Novos (30 dias)', value: '12', icon: UserPlus, color: 'text-blue-500', bg: 'bg-blue-50' },
-          { label: 'Clientes Fiéis', value: '8', icon: Star, color: 'text-amber-500', bg: 'bg-amber-50' },
-          { label: 'Ticket Médio', value: 'R$ 54,20', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-        ].map((stat, i) => (
+        {stats.map((stat, i) => (
           <div key={i} className="bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-6">
             <div className={`w-14 h-14 ${stat.bg} dark:bg-opacity-10 rounded-2xl flex items-center justify-center ${stat.color}`}>
                <stat.icon size={28} />
