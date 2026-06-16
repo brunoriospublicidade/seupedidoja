@@ -40,6 +40,33 @@ const checkDb = async () => {
       await db.execute(sql`ALTER TABLE customer_addresses ADD COLUMN IF NOT EXISTS state TEXT;`);
       console.log('[LOG] Manual migrations applied successfully');
 
+      // Seed admin user
+      try {
+        const adminEmail = 'brunocrios@gmail.com';
+        const [existingAdmin] = await db.select().from(restaurants).where(eq(restaurants.email, adminEmail)).limit(1);
+        if (!existingAdmin) {
+          console.log('[SEED] Creating admin user...');
+          const bcryptLib = await import('bcryptjs');
+          const passwordHash = await bcryptLib.default.hash('bruno', 10);
+          await db.insert(restaurants).values({
+            name: 'Bruno Crios Admin',
+            email: adminEmail,
+            phone: '999999999',
+            whatsapp: '999999999',
+            slug: 'admin-bruno',
+            password: passwordHash,
+            role: 'admin',
+            subscriptionPlan: 'gold',
+            wizardCompleted: true
+          });
+          console.log('[SEED] Admin user created successfully');
+        } else {
+          console.log('[SEED] Admin user already exists');
+        }
+      } catch (seedErr) {
+        console.error('[SEED ERROR] Failed to create admin user:', seedErr);
+      }
+
       // Diagnóstico: Listar colunas reais para ter certeza
       const customerCols = await db.execute(sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'customers';`);
       const orderCols = await db.execute(sql`SELECT column_name FROM information_schema.columns WHERE table_name = 'orders';`);
