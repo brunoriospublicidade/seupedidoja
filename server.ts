@@ -5,6 +5,7 @@ import { appRouter } from './src/server';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 import { db } from './src/server/db';
 import { sql } from 'drizzle-orm';
 import { restaurants } from './src/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Database Connection Check
 const checkDb = async () => {
@@ -44,8 +46,7 @@ const checkDb = async () => {
       try {
         const adminEmail = 'brunocrios@gmail.com';
         const [existingAdmin] = await db.select().from(restaurants).where(eq(restaurants.email, adminEmail)).limit(1);
-        const bcryptLib = await import('bcryptjs');
-        const passwordHash = await bcryptLib.default.hash('bruno', 10);
+        const passwordHash = await bcrypt.hash('bruno', 10);
         if (!existingAdmin) {
           console.log('[SEED] Creating admin user...');
           await db.insert(restaurants).values({
