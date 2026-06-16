@@ -313,37 +313,39 @@ const SettingsPage = () => {
               className="space-y-8"
             >
               <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-sm border border-slate-100 dark:border-slate-800">
-                {/* Banner */}
-                <div className="relative h-48 bg-slate-100 dark:bg-slate-950 group overflow-hidden rounded-t-[32px]">
-                  {formData?.banner_url ? (
-                    <img src={formData.banner_url} alt="Banner" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 opacity-50">
-                      <ImageIcon size={48} />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Sem Banner</span>
-                    </div>
-                  )}
-                  {uploadingBanner ? (
-                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-                      <div className="relative w-16 h-16 flex items-center justify-center">
-                        <Loader2 className="animate-spin text-white absolute inset-0" size={64} strokeWidth={1} />
-                        <span className="text-xs font-black text-white">{uploadProgressBanner}%</span>
+                 {/* Banner */}
+                <div className="relative">
+                  <div className="relative h-48 bg-slate-100 dark:bg-slate-950 group overflow-hidden rounded-t-[32px]">
+                    {formData?.banner_url ? (
+                      <img src={formData.banner_url} alt="Banner" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2 opacity-50">
+                        <ImageIcon size={48} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Sem Banner</span>
                       </div>
-                      <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${uploadProgressBanner}%` }}
-                          className="h-full bg-primary"
-                        />
+                    )}
+                    {uploadingBanner ? (
+                      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+                        <div className="relative w-16 h-16 flex items-center justify-center">
+                          <Loader2 className="animate-spin text-white absolute inset-0" size={64} strokeWidth={1} />
+                          <span className="text-xs font-black text-white">{uploadProgressBanner}%</span>
+                        </div>
+                        <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${uploadProgressBanner}%` }}
+                            className="h-full bg-primary"
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 cursor-pointer">
-                      <Camera className="text-white" size={32} />
-                      <span className="text-white text-[10px] font-black uppercase tracking-widest">Alterar Banner</span>
-                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
-                    </label>
-                  )}
+                    ) : (
+                      <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 cursor-pointer">
+                        <Camera className="text-white" size={32} />
+                        <span className="text-white text-[10px] font-black uppercase tracking-widest">Alterar Banner</span>
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'banner')} />
+                      </label>
+                    )}
+                  </div>
 
                   <div className="absolute -bottom-12 left-8 z-20">
                     <label className="relative block w-32 h-32 rounded-[32px] bg-white dark:bg-slate-900 border-[6px] border-white dark:border-slate-900 shadow-2xl overflow-hidden cursor-pointer group/logo transition-transform hover:scale-105 active:scale-95">
