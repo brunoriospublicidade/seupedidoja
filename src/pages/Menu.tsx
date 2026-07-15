@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Plus, Search, Filter, ImageIcon, DollarSign, Tag, ListChecks, Loader2, ListFilter, X, Pencil, Trash2, Layers, ChevronDown, ChevronUp, FileUp, Download, AlertTriangle, Edit3 } from 'lucide-react';
+import { Plus, Sparkles, Search, Filter, ImageIcon, DollarSign, Tag, ListChecks, Loader2, ListFilter, X, Pencil, Trash2, Layers, ChevronDown, ChevronUp, FileUp, Download, AlertTriangle, Edit3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { trpc } from '../lib/trpc';
@@ -7,6 +7,7 @@ import { uploadImage } from '../lib/storage';
 import * as XLSX from 'xlsx';
 import BulkEditModal from '../components/BulkEditModal';
 import LoadingScreen from '../components/LoadingScreen';
+import MenuWizard from '../components/MenuWizard';
 
 const MenuPage = () => {
   const [isAdding, setIsAdding] = useState(false);
@@ -20,6 +21,7 @@ const MenuPage = () => {
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [resetPassword, setResetPassword] = useState('');
   const [expandedCategoryId, setExpandedCategoryId] = useState<string | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useContext();
@@ -332,6 +334,18 @@ const MenuPage = () => {
 
   return (
     <div className="space-y-8 pb-20">
+      {showWizard && (
+        <MenuWizard 
+          restaurant={restaurant} 
+          onComplete={() => {
+            utils.products.list.invalidate();
+            utils.categories.list.invalidate();
+            utils.restaurants.get.invalidate();
+            setShowWizard(false);
+          }}
+          onSkip={() => setShowWizard(false)}
+        />
+      )}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold text-slate-800 dark:text-white">Cardápio</h2>
@@ -371,6 +385,16 @@ const MenuPage = () => {
           </button>
           <input type="file" ref={fileInputRef} className="hidden" accept=".xlsx, .xls" onChange={handleImport} />
           
+          {products && products.length === 0 && (
+            <button 
+              onClick={() => setShowWizard(true)}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+            >
+              <Sparkles size={20} className="animate-pulse" />
+              Criar Cardápio com IA
+            </button>
+          )}
+
           <button 
             onClick={() => setIsAdding(true)}
             className="flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20 active:scale-95"
@@ -572,115 +596,145 @@ const MenuPage = () => {
         )}
       </AnimatePresence>
 
-      <div className="space-y-12">
-        {groupedProducts.map((group) => (
-          <div key={group.id} className="space-y-6">
-            <div 
-              className="flex items-center justify-between cursor-pointer group"
-              onClick={() => toggleCategoryExpand(group.id)}
+      {products && products.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-100 dark:border-slate-800 p-12 text-center max-w-2xl mx-auto my-10 space-y-6 shadow-sm">
+          <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-500 rounded-[32px] flex items-center justify-center mx-auto animate-pulse">
+            <Sparkles size={40} />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-bold text-slate-800 dark:text-white">Seu cardápio está vazio</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+              Você ainda não cadastrou nenhum produto. Que tal usar nossa Inteligência Artificial para gerar um cardápio completo em poucos segundos?
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-2">
+            <button 
+              onClick={() => setShowWizard(true)}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-4 rounded-2xl font-bold hover:opacity-90 transition-all shadow-lg shadow-indigo-600/20 active:scale-95 animate-pulse"
             >
-              <div className="flex items-center gap-4">
-                <div 
-                  className="w-1.5 h-8 rounded-full" 
-                  style={{ backgroundColor: group.color || '#F59E0B' }}
-                />
-                <h3 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
-                  {group.name}
-                  <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
-                    {group.items.length} itens
-                  </span>
-                </h3>
+              <Sparkles size={18} />
+              Criar Cardápio com IA
+            </button>
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-8 py-4 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+            >
+              <Plus size={18} />
+              Cadastrar Manualmente
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-12">
+          {groupedProducts.map((group) => (
+            <div key={group.id} className="space-y-6">
+              <div 
+                className="flex items-center justify-between cursor-pointer group"
+                onClick={() => toggleCategoryExpand(group.id)}
+              >
+                <div className="flex items-center gap-4">
+                  <div 
+                    className="w-1.5 h-8 rounded-full" 
+                    style={{ backgroundColor: group.color || '#F59E0B' }}
+                  />
+                  <h3 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                    {group.name}
+                    <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                      {group.items.length} itens
+                    </span>
+                  </h3>
+                </div>
+                <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 group-hover:bg-primary/10 transition-colors">
+                  {expandedCategoryId === group.id ? <ChevronUp size={18} className="text-primary" /> : <ChevronDown size={18} className="text-slate-400" />}
+                </div>
               </div>
-              <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 group-hover:bg-primary/10 transition-colors">
-                {expandedCategoryId === group.id ? <ChevronUp size={18} className="text-primary" /> : <ChevronDown size={18} className="text-slate-400" />}
-              </div>
-            </div>
 
-            <AnimatePresence initial={false}>
-              {expandedCategoryId === group.id && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {group.items.map((product: any) => (
-                      <motion.div 
-                        layout
-                        key={product.id} 
-                        className="bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 group hover:shadow-2xl hover:shadow-black/5 transition-all duration-300 relative flex flex-col h-full"
-                      >
-                        <div className="aspect-[4/3] relative overflow-hidden bg-slate-100 dark:bg-slate-950">
-                          {product.imageUrl ? (
-                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-200 dark:text-slate-800">
-                              <ImageIcon size={64} />
-                            </div>
-                          )}
-                          
-                          <div className="absolute top-4 left-4 flex flex-col gap-2">
-                            {product.subcategories?.name && (
-                              <div className="px-3 py-1 bg-primary/90 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm text-white w-fit flex items-center gap-1">
-                                <Layers size={10} /> {product.subcategories.name}
+              <AnimatePresence initial={false}>
+                {expandedCategoryId === group.id && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {group.items.map((product: any) => (
+                        <motion.div 
+                          layout
+                          key={product.id} 
+                          className="bg-white dark:bg-slate-900 rounded-[32px] overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800 group hover:shadow-2xl hover:shadow-black/5 transition-all duration-300 relative flex flex-col h-full"
+                        >
+                          <div className="aspect-[4/3] relative overflow-hidden bg-slate-100 dark:bg-slate-950">
+                            {product.imageUrl ? (
+                              <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-200 dark:text-slate-800">
+                                <ImageIcon size={64} />
                               </div>
                             )}
-                          </div>
+                            
+                            <div className="absolute top-4 left-4 flex flex-col gap-2">
+                              {product.subcategories?.name && (
+                                <div className="px-3 py-1 bg-primary/90 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm text-white w-fit flex items-center gap-1">
+                                  <Layers size={10} /> {product.subcategories.name}
+                                </div>
+                              )}
+                            </div>
 
-                          <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                            <button 
-                              onClick={() => handleEdit(product)}
-                              className="p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl shadow-lg text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
-                            >
-                              <Pencil size={18} />
-                            </button>
-                            <button 
-                              disabled={!!deletingId}
-                              onClick={() => handleDelete(product.id)}
-                              className="p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl shadow-lg text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors disabled:opacity-50"
-                            >
-                              {deletingId === product.id ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="p-7 space-y-4 flex-1 flex flex-col">
-                          <div className="flex justify-between items-start gap-4">
-                            <h4 className="font-bold text-xl text-slate-800 dark:text-white leading-tight group-hover:text-primary transition-colors">{product.name}</h4>
-                            <div className="bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
-                              <span className="text-primary font-black text-lg">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</span>
+                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                              <button 
+                                onClick={() => handleEdit(product)}
+                                className="p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl shadow-lg text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
+                              >
+                                <Pencil size={18} />
+                              </button>
+                              <button 
+                                disabled={!!deletingId}
+                                onClick={() => handleDelete(product.id)}
+                                className="p-2.5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm rounded-xl shadow-lg text-slate-600 dark:text-slate-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                              >
+                                {deletingId === product.id ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                              </button>
                             </div>
                           </div>
-                          
-                          <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-2 flex-1">{product.description || 'Sem descrição.'}</p>
-                          
-                          <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex flex-wrap gap-1.5">
-                            {product.optionals && Array.isArray(product.optionals) && product.optionals.length > 0 ? (
-                              product.optionals.map((opt: any) => {
-                                const groupId = typeof opt === 'string' ? opt : opt?.id;
-                                const group = optionalGroups?.find(g => g.id === groupId);
-                                if (!groupId) return null;
-                                return (
-                                  <span key={`opt-${product.id}-${groupId}`} className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-slate-500 dark:text-slate-400">
-                                    {group?.name || 'Opcional'}
-                                  </span>
-                                );
-                              })
-                            ) : (
-                              <span className="text-[10px] font-medium text-slate-300 dark:text-slate-600 italic">Sem opcionais</span>
-                            )}
+
+                          <div className="p-7 space-y-4 flex-1 flex flex-col">
+                            <div className="flex justify-between items-start gap-4">
+                              <h4 className="font-bold text-xl text-slate-800 dark:text-white leading-tight group-hover:text-primary transition-colors">{product.name}</h4>
+                              <div className="bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                                <span className="text-primary font-black text-lg">R$ {(Number(product.price) || 0).toFixed(2).replace('.', ',')}</span>
+                              </div>
+                            </div>
+                            
+                            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-2 flex-1">{product.description || 'Sem descrição.'}</p>
+                            
+                            <div className="pt-4 border-t border-slate-50 dark:border-slate-800 flex flex-wrap gap-1.5">
+                              {product.optionals && Array.isArray(product.optionals) && product.optionals.length > 0 ? (
+                                product.optionals.map((opt: any) => {
+                                  const groupId = typeof opt === 'string' ? opt : opt?.id;
+                                  const group = optionalGroups?.find(g => g.id === groupId);
+                                  if (!groupId) return null;
+                                  return (
+                                    <span key={`opt-${product.id}-${groupId}`} className="text-[10px] font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-slate-500 dark:text-slate-400">
+                                      {group?.name || 'Opcional'}
+                                    </span>
+                                  );
+                                })
+                              ) : (
+                                <span className="text-[10px] font-medium text-slate-300 dark:text-slate-600 italic">Sem opcionais</span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ))}
-      </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      )}
       {/* Modal de Reset de Cardápio */}
       <AnimatePresence>
         {isResetModalOpen && (
